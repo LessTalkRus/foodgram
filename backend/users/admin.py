@@ -12,3 +12,4 @@ class UserAdmin(admin.ModelAdmin):
     list_filter = ('is_staff', 'is_superuser', 'is_active')
     ordering = ('username',)
     list_editable = ('is_staff',)
+    list_display_links = ('username',)
