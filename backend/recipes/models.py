@@ -96,7 +96,7 @@ class Recipe(models.Model):
         ordering = ('-created_at',)
 
     def __str__(self):
-        return self.title
+        return self.name
 
 
 class RecipeIngredient(models.Model):
@@ -130,13 +130,14 @@ class RecipeIngredient(models.Model):
         ]
 
     def __str__(self):
-        return f'{self.ingredient.name} в {self.recipe.title} - {self.amount}'
+        return f'{self.ingredient.name} в {self.recipe.name} - {self.amount}'
 
 
 class Favorite(models.Model):
     user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
+        related_name='favorites',
         verbose_name='Пользователь'
     )
     recipe = models.ForeignKey(
@@ -157,20 +158,20 @@ class Favorite(models.Model):
         ]
 
     def __str__(self):
-        return f'Рецепт {self.recipe.title} в избранном у {self.user.username}'
+        return f'Рецепт {self.recipe.name} в избранном у {self.user.username}'
 
 
 class Follow(models.Model):
     user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        related_name='follow',
+        related_name='follows',
         verbose_name='Подписчик'
     )
     author = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        related_name='follower',
+        related_name='followers',
         verbose_name='Автор'
     )
 
@@ -192,6 +193,7 @@ class ShoppingCart(models.Model):
     user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
+        related_name='shopping_carts',
         verbose_name='Пользователь'
     )
     recipe = models.ForeignKey(
@@ -212,4 +214,4 @@ class ShoppingCart(models.Model):
         ]
 
     def __str__(self):
-        return f'{self.user.username} добавил в корзину {self.recipe.title}'
+        return f'{self.user.username} добавил в корзину {self.recipe.name}'
