@@ -2,7 +2,6 @@ from rest_framework.pagination import PageNumberPagination
 
 
 class CustomPagination(PageNumberPagination):
-    """Кастомный пагинатор для вывода 6 элементов на странице."""
-
+    """Пагинация как в ТЗ/тестах: count/next/previous/results + ?limit=."""
     page_size_query_param = 'limit'
     page_size = 6

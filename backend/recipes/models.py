@@ -133,6 +133,34 @@ class RecipeIngredient(models.Model):
         return f'{self.ingredient.name} в {self.recipe.name} - {self.amount}'
 
 
+class RecipeTag(models.Model):
+    recipe = models.ForeignKey(
+        Recipe,
+        on_delete=models.CASCADE,
+        related_name='recipe_tags',
+        verbose_name='Рецепт'
+    )
+    tag = models.ForeignKey(
+        Tag,
+        on_delete=models.CASCADE,
+        related_name='tag_recipes',
+        verbose_name='Тег'
+    )
+
+    class Meta:
+        verbose_name = 'Тег в рецепте'
+        verbose_name_plural = 'Теги в рецептах'
+        constraints = [
+            models.UniqueConstraint(
+                fields=('recipe', 'tag'),
+                name='unique_tags_in_the_recipe'
+            )
+        ]
+
+    def __str__(self):
+        return f'{self.tag.name} в {self.recipe.name}'
+
+
 class Favorite(models.Model):
     user = models.ForeignKey(
         User,
@@ -165,13 +193,13 @@ class Follow(models.Model):
     user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        related_name='follows',
+        related_name='follower',
         verbose_name='Подписчик'
     )
     author = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        related_name='followers',
+        related_name='follow',
         verbose_name='Автор'
     )
 

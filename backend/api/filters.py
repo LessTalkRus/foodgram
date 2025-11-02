@@ -20,23 +20,27 @@ class RecipeFilter(FilterSet):
         to_field_name='slug',
         queryset=Tag.objects.all()
     )
-    is_favorited = filters.BooleanFilter(method='filter_is_favorited')
-    is_in_shopping_cart = filters.BooleanFilter(
+    in_favorites = filters.NumberFilter(method='filter_in_favorites')
+    in_shopping_cart = filters.NumberFilter(
         method='filter_in_shopping_cart'
     )
 
     class Meta:
         model = Recipe
-        fields = ('tags', 'author', 'is_favorited', 'is_in_shopping_cart')
+        fields = ('tags', 'author', 'im_favorites', 'in_shopping_cart')
 
-    def filter_is_favorited(self, queryset, name, value):
+    def filter_in_favorites(self, queryset, name, value):
         user = self.request.user
         if value and not user.is_anonymous:
             return queryset.filter(favorites__user=self.request.user)
         return queryset
 
-    def filter_is_in_shopping_cart(self, queryset, name, value):
+    def filter_in_shopping_cart(self, queryset, name, value):
         user = self.request.user
         if value and not user.is_anonymous:
-            return queryset.filter(shopping_carts__user=self.request.user)
+            return queryset.filter(shopping_cart__user=self.request.user)
         return queryset
+
+    class Meta:
+        model = Recipe
+        fields = ('tags', 'author', 'in_favorites', 'in_shopping_cart')
