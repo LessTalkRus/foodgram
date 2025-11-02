@@ -6,12 +6,14 @@ from .views import (
     CustomUsersViewSet
 )
 
+app_name = 'api'
+
 router = routers.DefaultRouter()
+router.register('users', CustomUsersViewSet, basename='users')
 router.register('tags', TagViewSet, basename='tags')
 router.register('ingredients', IngredientViewSet, basename='ingredients')
 router.register('recipes', RecipeViewSet, basename='recipes')
-router.register('users', CustomUsersViewSet, basename='users')
-app_name = 'api'
+
 
 urlpatterns = [
     path('', include(router.urls)),
