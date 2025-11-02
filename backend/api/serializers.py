@@ -39,7 +39,7 @@ class IngredientSerializer(serializers.ModelSerializer):
 
 # ---------- Пользователи (Djoser) ----------
 
-class CustomUserSerializer(DjoserUserSerializer):
+class CustomUserSerializer(UserCreateSerializer):
     is_subscribed = serializers.SerializerMethodField()
 
     class Meta:
@@ -58,7 +58,7 @@ class CustomUserSerializer(DjoserUserSerializer):
 
 class CustomUserCreateSerializer(CustomUserSerializer):
 
-    class Meta(DjoserUserCreateSerializer.Meta):
+    class Meta():
         model = User
         fields = (
             'id', 'email', 'username',

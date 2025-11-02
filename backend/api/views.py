@@ -1,30 +1,31 @@
-from django.db.models import Q, Sum, F
+from django.db.models import Sum
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
-
-from rest_framework import permissions, status, viewsets
+from django_filters.rest_framework import DjangoFilterBackend
+from djoser.views import UserViewSet
+from rest_framework import viewsets, status
 from rest_framework.decorators import action
-from rest_framework.response import Response
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.permissions import (
     AllowAny, IsAuthenticatedOrReadOnly, IsAuthenticated
 )
+from rest_framework.response import Response
+from rest_framework.viewsets import ModelViewSet
 
-from django_filters.rest_framework import DjangoFilterBackend
-from djoser.views import UserViewSet as DjoserUserViewSet
-
-from users.models import User
 from recipes.models import (
-    Tag, Ingredient, Recipe, Favorite, ShoppingCart, Follow, RecipeIngredient
+    Ingredient, Tag, Recipe, Favorite, ShoppingCart, Follow,
+    RecipeIngredient,
 )
-from api.serializers import (
-    CustomUserSerializer, CustomUserCreateSerializer,
-    TagSerializer, IngredientSerializer,
-    RecipeReadSerializer, RecipeWriteSerializer, ShortRecipeSerializer
+from users.models import User
+from .filters import IngredientFilter, RecipeFilter
+from .pagination import CustomPagination
+from .permissions import IsAuthorOrReadOnly
+from .serializers import (
+    TagSerializer,
+    IngredientSerializer,
+    RecipeSerializer, CustomUserSerializer, CreateRecipeSerializer,
+    FollowSerializer, FavoritesSerializer,
 )
-from api.filters import RecipeFilter, IngredientFilter
-from api.pagination import CustomPagination
-from api.permissions import IsAuthorOrReadOnly, IsAdminOrReadOnly
 
 
 # ---------- Пользователи (наследуем Djoser) ----------
@@ -81,7 +82,7 @@ class CustomUsersViewSet(UserViewSet):
             serializer = FollowSerializer(
                 page,
                 many=True,
-                context = ['request': request]
+                context = {'request': request}
             )
 
 
@@ -119,7 +120,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
     )
     queryset = Recipe.objects.all()
     permission_classes = (IsAuthorOrReadOnly,)
-    pagination_class = LimitOffsetPagination
+    pagination_class = CustomPagination
     filter_backends = (DjangoFilterBackend,)
     filterset_class = RecipeFilter
 
