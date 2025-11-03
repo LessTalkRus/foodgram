@@ -41,12 +41,9 @@ from recipes.models import (
 User = get_user_model()
 
 
-# ===============================
-# 👤 Пользователи
-# ===============================
-
-
 class UserViewSet(DjoserUserViewSet):
+    """ViewSet для управления пользователями и их действиями."""
+
     queryset = User.objects.all()
     serializer_class = BaseUserSerializer
     permission_classes = [IsAuthenticatedOrReadOnly]
@@ -58,9 +55,7 @@ class UserViewSet(DjoserUserViewSet):
         permission_classes=[AllowAny],
     )
     def me(self, request):
-        """Информация о текущем пользователе.
-        Без токена возвращаем 401 вместо 500.
-        """
+        """Возвращает данные текущего пользователя или 401 без токена."""
         if not request.user.is_authenticated:
             return Response(
                 {"detail": "Authentication credentials were not provided."},
@@ -76,6 +71,7 @@ class UserViewSet(DjoserUserViewSet):
         permission_classes=[IsAuthenticated],
     )
     def avatar(self, request):
+        """Загружает или удаляет аватар пользователя."""
         user = request.user
 
         if request.method == "PUT":
@@ -95,7 +91,6 @@ class UserViewSet(DjoserUserViewSet):
                 {"avatar": user.avatar.url}, status=status.HTTP_200_OK
             )
 
-        # DELETE
         if user.avatar:
             user.avatar.delete(save=False)
             user.avatar = None
@@ -108,6 +103,7 @@ class UserViewSet(DjoserUserViewSet):
         permission_classes=[IsAuthenticated],
     )
     def subscribe(self, request, id=None):
+        """Подписывает или отписывает пользователя от автора."""
         author = get_object_or_404(User, pk=id)
         user = request.user
 
@@ -131,6 +127,7 @@ class UserViewSet(DjoserUserViewSet):
         detail=False, methods=["get"], permission_classes=[IsAuthenticated]
     )
     def subscriptions(self, request):
+        """Возвращает список авторов, на которых подписан пользователь."""
         authors = User.objects.filter(
             id__in=Follow.objects.filter(user=request.user).values_list(
                 "following", flat=True
@@ -148,24 +145,18 @@ class UserViewSet(DjoserUserViewSet):
         return Response(serializer.data)
 
 
-# ===============================
-# 🏷️ Теги
-# ===============================
-
-
 class TagViewSet(viewsets.ReadOnlyModelViewSet):
+    """Просмотр тегов без возможности редактирования."""
+
     queryset = Tag.objects.all()
     serializer_class = TagSerializer
     permission_classes = [AllowAny]
     pagination_class = None
 
 
-# ===============================
-# 🧂 Ингредиенты
-# ===============================
-
-
 class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
+    """Просмотр ингредиентов с возможностью поиска по имени."""
+
     queryset = Ingredient.objects.all()
     serializer_class = IngredientSerializer
     filter_backends = [DjangoFilterBackend, filters.SearchFilter]
@@ -176,12 +167,9 @@ class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
     pagination_class = None
 
 
-# ===============================
-# 🍽️ Рецепты
-# ===============================
-
-
 class RecipeViewSet(viewsets.ModelViewSet):
+    """CRUD для рецептов с дополнительными действиями."""
+
     queryset = Recipe.objects.select_related("author").prefetch_related(
         "tags", "recipe_ingredients__ingredient"
     )
@@ -190,20 +178,23 @@ class RecipeViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticatedOrReadOnly, IsAuthorOrReadOnly]
 
     def get_serializer_class(self):
+        """Определяет сериализатор в зависимости от действия."""
         if self.action in ("create", "update", "partial_update"):
             return RecipeWriteSerializer
         return RecipeReadSerializer
 
     def perform_create(self, serializer):
+        """Сохраняет рецепт, устанавливая автора текущим пользователем."""
         serializer.save(author=self.request.user)
 
     def get_serializer_context(self):
+        """Добавляет объект запроса в контекст сериализатора."""
         context = super().get_serializer_context()
         context.update({"request": self.request})
         return context
 
-    # ---------- Избранное / корзина ----------
     def _toggle_relation(self, model, recipe_id, request):
+        """Добавляет или удаляет рецепт из связанной модели."""
         recipe = get_object_or_404(Recipe, pk=recipe_id)
 
         if request.method == "DELETE":
@@ -224,13 +215,14 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=["post", "delete"], url_path="favorite")
     def favorite(self, request, pk=None):
+        """Добавляет или удаляет рецепт из избранного."""
         return self._toggle_relation(Favorite, pk, request)
 
     @action(detail=True, methods=["post", "delete"], url_path="shopping_cart")
     def shopping_cart(self, request, pk=None):
+        """Добавляет или удаляет рецепт из списка покупок."""
         return self._toggle_relation(ShoppingCart, pk, request)
 
-    # ---------- Список покупок ----------
     @action(
         detail=False,
         methods=["get"],
@@ -238,6 +230,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         permission_classes=[IsAuthenticated],
     )
     def download_shopping_cart(self, request):
+        """Формирует и возвращает список покупок в текстовом файле."""
         user = request.user
         recipes = Recipe.objects.filter(shopping_cart__user=user)
 
@@ -264,7 +257,6 @@ class RecipeViewSet(viewsets.ModelViewSet):
         )
         return response
 
-    # ---------- Короткая ссылка ----------
     @action(
         detail=True,
         methods=["get"],
@@ -272,13 +264,13 @@ class RecipeViewSet(viewsets.ModelViewSet):
         permission_classes=[AllowAny],
     )
     def get_link(self, request, pk=None):
+        """Возвращает короткую ссылку на рецепт."""
         recipe = get_object_or_404(Recipe, pk=pk)
         try:
             detail_url = request.build_absolute_uri(
                 reverse("recipe-detail", kwargs={"pk": recipe.id})
             )
         except Exception:
-            # fallback — прямой путь без reverse
             detail_url = request.build_absolute_uri(
                 f"/api/recipes/{recipe.id}/"
             )

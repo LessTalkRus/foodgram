@@ -7,7 +7,12 @@ admin.site.empty_value_display = "-пусто-"
 
 @admin.register(User)
 class UserAdmin(admin.ModelAdmin):
-    """Админ-панель для пользователей."""
+    """
+    Настройка отображения и редактирования пользователей в админ-панели.
+
+    Определяет поля, отображаемые в списке, поиск, фильтрацию и порядок
+    сортировки записей.
+    """
 
     list_display = (
         "id",
@@ -24,7 +29,6 @@ class UserAdmin(admin.ModelAdmin):
     list_editable = ("is_staff",)
     list_display_links = ("id", "username")
 
-    # Поля, доступные для редактирования в админке (включая аватар)
     fields = (
         "username",
         "email",

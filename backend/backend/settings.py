@@ -6,6 +6,10 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+# -------------------------------------------------------------
+# Базовые пути и ключи
+# -------------------------------------------------------------
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = os.getenv("SECRET_KEY", get_random_secret_key())
@@ -24,29 +28,33 @@ CSRF_TRUSTED_ORIGINS = [
     for origin in _raw_csrf
 ]
 
-# ===============================
-# Applications
-# ===============================
+# -------------------------------------------------------------
+# Приложения
+# -------------------------------------------------------------
 
 INSTALLED_APPS = [
+    # Django
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    # Third-party
+    # Сторонние пакеты
     "rest_framework",
     "rest_framework.authtoken",
     "djoser",
     "django_filters",
-    # Local apps
+    "drf_yasg",
+    # Локальные приложения
     "api.apps.ApiConfig",
     "users.apps.UsersConfig",
     "recipes.apps.RecipesConfig",
-    # Docs
-    "drf_yasg",
 ]
+
+# -------------------------------------------------------------
+# Middleware
+# -------------------------------------------------------------
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -57,6 +65,10 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
+
+# -------------------------------------------------------------
+# URL и шаблоны
+# -------------------------------------------------------------
 
 ROOT_URLCONF = "backend.urls"
 
@@ -78,9 +90,9 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "backend.wsgi.application"
 
-# ===============================
-# Database
-# ===============================
+# -------------------------------------------------------------
+# База данных
+# -------------------------------------------------------------
 
 DATABASES = {
     "default": {
@@ -93,9 +105,9 @@ DATABASES = {
     }
 }
 
-# ===============================
+# -------------------------------------------------------------
 # Django REST Framework
-# ===============================
+# -------------------------------------------------------------
 
 REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": [
@@ -108,9 +120,9 @@ REST_FRAMEWORK = {
     "PAGE_SIZE": 6,
 }
 
-# ===============================
-# Djoser configuration
-# ===============================
+# -------------------------------------------------------------
+# Djoser
+# -------------------------------------------------------------
 
 DJOSER = {
     "LOGIN_FIELD": "email",
@@ -128,14 +140,15 @@ DJOSER = {
     },
 }
 
-# ===============================
-# Password validation
-# ===============================
+# -------------------------------------------------------------
+# Проверка паролей
+# -------------------------------------------------------------
 
 AUTH_PASSWORD_VALIDATORS = [
     {
         "NAME": (
-            "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"
+            "django.contrib.auth.password_validation."
+            "UserAttributeSimilarityValidator"
         )
     },
     {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
@@ -151,18 +164,18 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-# ===============================
-# Localization
-# ===============================
+# -------------------------------------------------------------
+# Локализация
+# -------------------------------------------------------------
 
 LANGUAGE_CODE = "ru"
 TIME_ZONE = "Europe/Moscow"
 USE_I18N = True
 USE_TZ = True
 
-# ===============================
-# Static & Media
-# ===============================
+# -------------------------------------------------------------
+# Статика и медиа
+# -------------------------------------------------------------
 
 STATIC_URL = "/static/"
 STATIC_ROOT = os.path.join(BASE_DIR, "static")
@@ -170,6 +183,9 @@ STATIC_ROOT = os.path.join(BASE_DIR, "static")
 MEDIA_URL = "/media/"
 MEDIA_ROOT = os.path.join(BASE_DIR, "media")
 
-AUTH_USER_MODEL = "users.User"
+# -------------------------------------------------------------
+# Прочее
+# -------------------------------------------------------------
 
+AUTH_USER_MODEL = "users.User"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"

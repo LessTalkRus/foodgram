@@ -6,6 +6,13 @@ User = get_user_model()
 
 
 class Tag(models.Model):
+    """
+    Модель тега, который используется для классификации рецептов.
+
+    Тег содержит уникальные поля `name` и `slug` и применяется для
+    фильтрации рецептов по категориям.
+    """
+
     name = models.CharField(
         max_length=100, unique=True, verbose_name="Название тега"
     )
@@ -14,6 +21,8 @@ class Tag(models.Model):
     )
 
     class Meta:
+        """Мета-параметры модели Tag."""
+
         verbose_name = "Тег"
         verbose_name_plural = "Теги"
         ordering = ("name",)
@@ -24,10 +33,18 @@ class Tag(models.Model):
         ]
 
     def __str__(self):
+        """Возвращает строковое представление тега (его имя)."""
         return self.name
 
 
 class Ingredient(models.Model):
+    """
+    Модель ингредиента, используемого в рецептах.
+
+    Хранит название ингредиента и единицу измерения. Названия ингредиентов
+    индексируются для ускоренного поиска.
+    """
+
     name = models.CharField(
         max_length=100, db_index=True, verbose_name="Название ингредиента"
     )
@@ -36,6 +53,8 @@ class Ingredient(models.Model):
     )
 
     class Meta:
+        """Мета-параметры модели Ingredient."""
+
         verbose_name = "Ингредиент"
         verbose_name_plural = "Ингредиенты"
         constraints = [
@@ -46,10 +65,19 @@ class Ingredient(models.Model):
         ordering = ("name",)
 
     def __str__(self):
+        """Возвращает строковое представление ингредиента."""
         return f"{self.name} ({self.measurement_unit})"
 
 
 class Recipe(models.Model):
+    """
+    Модель рецепта.
+
+    Содержит информацию о названии, тексте, времени приготовления,
+    ингредиентах, тегах и авторе. Используется связь ManyToMany для
+    ингредиентов и тегов.
+    """
+
     author = models.ForeignKey(
         User, on_delete=models.CASCADE, verbose_name="Автор рецепта"
     )
@@ -74,16 +102,25 @@ class Recipe(models.Model):
     )
 
     class Meta:
+        """Мета-параметры модели Recipe."""
+
         default_related_name = "recipes"
         verbose_name = "Рецепт"
         verbose_name_plural = "Рецепты"
         ordering = ("-created_at",)
 
     def __str__(self):
+        """Возвращает строковое представление рецепта (его имя)."""
         return self.name
 
 
 class RecipeIngredient(models.Model):
+    """
+    Промежуточная модель для связи рецептов и ингредиентов.
+
+    Хранит количество каждого ингредиента, необходимого для рецепта.
+    """
+
     recipe = models.ForeignKey(
         Recipe,
         on_delete=models.CASCADE,
@@ -102,6 +139,8 @@ class RecipeIngredient(models.Model):
     )
 
     class Meta:
+        """Мета-параметры модели RecipeIngredient."""
+
         verbose_name = "Ингредиент в рецепте"
         verbose_name_plural = "Ингредиенты в рецептах"
         constraints = [
@@ -112,10 +151,17 @@ class RecipeIngredient(models.Model):
         ]
 
     def __str__(self):
+        """Возвращает строковое представление ингредиента в рецепте."""
         return f"{self.ingredient.name} в {self.recipe.name} - {self.amount}"
 
 
 class BaseRecipeUserModel(models.Model):
+    """
+    Абстрактная модель для связи пользователя и рецепта.
+
+    Используется как основа для избранного и списка покупок.
+    """
+
     user = models.ForeignKey(
         User, on_delete=models.CASCADE, verbose_name="Пользователь"
     )
@@ -124,6 +170,8 @@ class BaseRecipeUserModel(models.Model):
     )
 
     class Meta:
+        """Мета-параметры базовой модели связи User–Recipe."""
+
         abstract = True
         ordering = ("user", "recipe")
         constraints = [
@@ -133,12 +181,18 @@ class BaseRecipeUserModel(models.Model):
         ]
 
     def __str__(self):
+        """Возвращает строковое представление связи User–Recipe."""
         return f"{self.user.username} - {self.recipe.name}"
 
 
 class Favorite(BaseRecipeUserModel):
+    """
+    Модель для хранения рецептов, добавленных пользователем в избранное.
+    """
 
     class Meta(BaseRecipeUserModel.Meta):
+        """Мета-параметры модели Favorite."""
+
         default_related_name = "favorites"
         verbose_name = "Избранное"
         verbose_name_plural = "Избранное"
@@ -150,12 +204,21 @@ class Favorite(BaseRecipeUserModel):
         ]
 
     def __str__(self):
+        """Возвращает строковое представление избранного рецепта."""
         return f"Рецепт {self.recipe.name} в избранном у {self.user.username}"
 
 
 class ShoppingCart(BaseRecipeUserModel):
+    """
+    Модель списка покупок пользователя.
+
+    Содержит рецепты, добавленные в корзину для последующего скачивания
+    или оформления списка ингредиентов.
+    """
 
     class Meta(BaseRecipeUserModel.Meta):
+        """Мета-параметры модели ShoppingCart."""
+
         default_related_name = "shopping_cart"
         verbose_name = "Список покупок"
         verbose_name_plural = "Списки покупок"
@@ -166,10 +229,17 @@ class ShoppingCart(BaseRecipeUserModel):
         ]
 
     def __str__(self):
+        """Возвращает строковое представление записи корзины."""
         return f"{self.user.username} добавил в корзину {self.recipe.name}"
 
 
 class Follow(models.Model):
+    """
+    Модель подписки пользователя на автора рецептов.
+
+    Хранит связь между пользователем (подписчиком) и автором (following).
+    """
+
     user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
@@ -184,6 +254,8 @@ class Follow(models.Model):
     )
 
     class Meta:
+        """Мета-параметры модели Follow."""
+
         verbose_name = "Подписка"
         verbose_name_plural = "Подписки"
         constraints = [
@@ -194,4 +266,5 @@ class Follow(models.Model):
         ordering = ("user__username", "following__username")
 
     def __str__(self):
+        """Возвращает строковое представление подписки."""
         return f"{self.user.username} подписан на {self.following.username}"
