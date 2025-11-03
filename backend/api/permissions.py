@@ -1,13 +1,8 @@
-from django.contrib.auth import get_user_model
 from rest_framework import permissions
-
-User = get_user_model()
 
 
 class IsAuthorOrReadOnly(permissions.BasePermission):
-    def has_permission(self, request, view):
-        return (request.method in permissions.SAFE_METHODS
-                or request.user.is_authenticated)
+    """Разрешение: редактировать может только автор, остальным только чтение."""
 
     def has_object_permission(self, request, view, obj):
         return (
