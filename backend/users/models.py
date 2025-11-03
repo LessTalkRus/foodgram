@@ -5,7 +5,8 @@ from django.db import models
 username_validator = RegexValidator(
     regex=r"^[\w.@-]+$",
     message=(
-        "Имя пользователя может содержать" " только буквы, цифры и символы @ . - _"
+        "Имя пользователя может содержать"
+        " только буквы, цифры и символы @ . - _"
     ),
 )
 
@@ -21,7 +22,10 @@ class User(AbstractUser):
     first_name = models.CharField(max_length=100, verbose_name="Имя")
     last_name = models.CharField(max_length=100, verbose_name="Фамилия")
     avatar = models.ImageField(
-        upload_to="users/avatars/", blank=True, null=True, verbose_name="Аватар"
+        upload_to="users/avatars/",
+        blank=True,
+        null=True,
+        verbose_name="Аватар",
     )
 
     USERNAME_FIELD = "email"

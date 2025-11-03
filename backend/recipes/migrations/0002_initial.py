@@ -124,7 +124,9 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name="recipe",
             name="tags",
-            field=models.ManyToManyField(to="recipes.tag", verbose_name="Теги"),
+            field=models.ManyToManyField(
+                to="recipes.tag", verbose_name="Теги"
+            ),
         ),
         migrations.AddConstraint(
             model_name="follow",
@@ -135,13 +137,15 @@ class Migration(migrations.Migration):
         migrations.AddConstraint(
             model_name="favorite",
             constraint=models.UniqueConstraint(
-                fields=("user", "recipe"), name="unique_favorite_recipe_per_user"
+                fields=("user", "recipe"),
+                name="unique_favorite_recipe_per_user",
             ),
         ),
         migrations.AddConstraint(
             model_name="recipeingredient",
             constraint=models.UniqueConstraint(
-                fields=("recipe", "ingredient"), name="unique_ingredients_in_the_recipe"
+                fields=("recipe", "ingredient"),
+                name="unique_ingredients_in_the_recipe",
             ),
         ),
         migrations.AddConstraint(

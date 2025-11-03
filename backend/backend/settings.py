@@ -15,10 +15,13 @@ DEBUG = os.getenv("DEBUG", "False").lower() == "true"
 ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "localhost").split(",")
 
 _raw_csrf = [
-    s.strip() for s in os.getenv("CSRF_TRUSTED_ORIGINS", "").split(",") if s.strip()
+    s.strip()
+    for s in os.getenv("CSRF_TRUSTED_ORIGINS", "").split(",")
+    if s.strip()
 ]
 CSRF_TRUSTED_ORIGINS = [
-    origin if origin.startswith("http") else f"https://{origin}" for origin in _raw_csrf
+    origin if origin.startswith("http") else f"https://{origin}"
+    for origin in _raw_csrf
 ]
 
 # ===============================
@@ -131,11 +134,21 @@ DJOSER = {
 
 AUTH_PASSWORD_VALIDATORS = [
     {
-        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"
+        "NAME": (
+            "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"
+        )
     },
     {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
-    {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
-    {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
+    {
+        "NAME": (
+            "django.contrib.auth.password_validation.CommonPasswordValidator"
+        )
+    },
+    {
+        "NAME": (
+            "django.contrib.auth.password_validation.NumericPasswordValidator"
+        )
+    },
 ]
 
 # ===============================

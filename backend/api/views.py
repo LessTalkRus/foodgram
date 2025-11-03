@@ -51,7 +51,12 @@ class UserViewSet(DjoserUserViewSet):
     serializer_class = BaseUserSerializer
     permission_classes = [IsAuthenticatedOrReadOnly]
 
-    @action(detail=False, methods=["get"], url_path="me", permission_classes=[AllowAny])
+    @action(
+        detail=False,
+        methods=["get"],
+        url_path="me",
+        permission_classes=[AllowAny],
+    )
     def me(self, request):
         """Информация о текущем пользователе.
         Без токена возвращаем 401 вместо 500.
@@ -86,7 +91,9 @@ class UserViewSet(DjoserUserViewSet):
             )
             serializer.is_valid(raise_exception=True)
             serializer.save()
-            return Response({"avatar": user.avatar.url}, status=status.HTTP_200_OK)
+            return Response(
+                {"avatar": user.avatar.url}, status=status.HTTP_200_OK
+            )
 
         # DELETE
         if user.avatar:
@@ -96,7 +103,9 @@ class UserViewSet(DjoserUserViewSet):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     @action(
-        detail=True, methods=["post", "delete"], permission_classes=[IsAuthenticated]
+        detail=True,
+        methods=["post", "delete"],
+        permission_classes=[IsAuthenticated],
     )
     def subscribe(self, request, id=None):
         author = get_object_or_404(User, pk=id)
@@ -118,7 +127,9 @@ class UserViewSet(DjoserUserViewSet):
         serializer = UserFollowSerializer(author, context={"request": request})
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-    @action(detail=False, methods=["get"], permission_classes=[IsAuthenticated])
+    @action(
+        detail=False, methods=["get"], permission_classes=[IsAuthenticated]
+    )
     def subscriptions(self, request):
         authors = User.objects.filter(
             id__in=Follow.objects.filter(user=request.user).values_list(
@@ -206,7 +217,9 @@ class RecipeViewSet(viewsets.ModelViewSet):
             raise ValidationError("Рецепт уже добавлен.")
         model.objects.create(user=request.user, recipe=recipe)
 
-        serializer = RecipeShortSerializer(recipe, context={"request": request})
+        serializer = RecipeShortSerializer(
+            recipe, context={"request": request}
+        )
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     @action(detail=True, methods=["post", "delete"], url_path="favorite")
@@ -253,7 +266,10 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
     # ---------- Короткая ссылка ----------
     @action(
-        detail=True, methods=["get"], url_path="get-link", permission_classes=[AllowAny]
+        detail=True,
+        methods=["get"],
+        url_path="get-link",
+        permission_classes=[AllowAny],
     )
     def get_link(self, request, pk=None):
         recipe = get_object_or_404(Recipe, pk=pk)
@@ -263,5 +279,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
             )
         except Exception:
             # fallback — прямой путь без reverse
-            detail_url = request.build_absolute_uri(f"/api/recipes/{recipe.id}/")
+            detail_url = request.build_absolute_uri(
+                f"/api/recipes/{recipe.id}/"
+            )
         return Response({"short-link": detail_url}, status=status.HTTP_200_OK)
