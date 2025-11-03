@@ -23,20 +23,16 @@ class BaseUserSerializer(DjoserUserSerializer):
 
     class Meta(DjoserUserSerializer.Meta):
         model = User
-        fields = (*DjoserUserSerializer.Meta.fields, 'avatar', 'is_subscribed', 'password')
-        extra_kwargs = {
-            'password': {'write_only': True}
-        }
+        fields = (*DjoserUserSerializer.Meta.fields, 'avatar', 'is_subscribed')
         read_only_fields = ('is_subscribed',)
 
+    # ✅ FIX: безопасная проверка user для анонимов
     def get_is_subscribed(self, user_instance):
-        """Проверка, подписан ли текущий пользователь на данного автора."""
         request = self.context.get('request')
-        if not request or not hasattr(request, 'user') or request.user.is_anonymous:
+        user = getattr(request, 'user', None)
+        if not user or not user.is_authenticated:
             return False
-        return Follow.objects.filter(
-            user=request.user, following=user_instance
-        ).exists()
+        return Follow.objects.filter(user=user, following=user_instance).exists()
 
     def create(self, validated_data):
         """Позволяет создавать пользователя без поля re_password."""
@@ -114,8 +110,8 @@ class RecipeReadSerializer(serializers.ModelSerializer):
         )
         read_only_fields = fields
 
+    # ✅ FIX: безопасная проверка user
     def _check_relation(self, model, recipe):
-        """Проверка, добавлен ли рецепт в избранное или корзину."""
         request = self.context.get('request')
         user = getattr(request, 'user', None)
         return (
@@ -133,16 +129,22 @@ class RecipeReadSerializer(serializers.ModelSerializer):
 class RecipeWriteSerializer(serializers.ModelSerializer):
     """Сериализатор для создания/редактирования рецептов."""
     ingredients = RecipeIngredientWriteSerializer(many=True)
-    tags = serializers.PrimaryKeyRelatedField(
-        queryset=Tag.objects.all(), many=True
-    )
+    tags = serializers.PrimaryKeyRelatedField(queryset=Tag.objects.all(), many=True)
     image = Base64ImageField(required=True)
 
     class Meta:
         model = Recipe
         fields = ('ingredients', 'tags', 'image', 'name', 'text', 'cooking_time')
 
-    # -------- Валидация --------
+    # ✅ FIX: проверка обязательных полей
+    def validate(self, data):
+        if not data.get('ingredients'):
+            raise serializers.ValidationError({'ingredients': 'Это поле обязательно.'})
+        if not data.get('tags'):
+            raise serializers.ValidationError({'tags': 'Это поле обязательно.'})
+        if not data.get('image'):
+            raise serializers.ValidationError({'image': 'Это поле обязательно.'})
+        return data
 
     def validate_ingredients(self, ingredients):
         if not ingredients:
@@ -160,8 +162,6 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
         if duplicates:
             raise serializers.ValidationError(f'Дублируются теги с ID: {duplicates}')
         return tags
-
-    # -------- Служебные методы --------
 
     def _set_ingredients(self, recipe, ingredients):
         RecipeIngredient.objects.bulk_create([
@@ -217,13 +217,16 @@ class UserFollowSerializer(BaseUserSerializer):
     recipes_count = serializers.IntegerField(source='recipes.count', read_only=True)
 
     class Meta(BaseUserSerializer.Meta):
-        fields = (*BaseUserSerializer.Meta.fields, 'recipes', 'recipes_count')
+        fields = (
+            'id', 'email', 'username', 'first_name', 'last_name',
+            'avatar', 'is_subscribed', 'recipes', 'recipes_count'
+        )
         read_only_fields = fields
 
     def get_recipes(self, user):
         request = self.context.get('request')
-        limit = request.GET.get('recipes_limit')
+        limit = request.GET.get('recipes_limit') if request else None
         recipes_qs = user.recipes.all()
-        if limit:
+        if limit and str(limit).isdigit():
             recipes_qs = recipes_qs[:int(limit)]
         return RecipeShortSerializer(recipes_qs, many=True, context=self.context).data

@@ -1,0 +1,6 @@
+{{ user.first_name }} {{ user.last_name }}, ваш список покупок на {{ date }}:
+
+{% for item in ingredients %}
+- {{ item.ingredient__name }} ({{ item.ingredient__measurement_unit }}) — {{ item.total_amount }}
+{% endfor %}
+Спасибо, что пользуетесь нашим сервисом!
