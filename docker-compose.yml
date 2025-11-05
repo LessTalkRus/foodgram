@@ -1,0 +1,46 @@
+version: '3.10-slim'
+
+volumes:
+  pg_data:
+  static:
+  media:
+
+services:
+  db:
+    image: postgres:13.10
+    container_name: foodgram-db
+    env_file: .env
+    environment:
+      - POSTGRES_DB=foodgram
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+
+  backend:
+    container_name: foodgram-backend
+    build: ./backend/
+    env_file: .env
+    depends_on:
+      - db
+    command: gunicorn backend.wsgi:application --bind 0.0.0.0:8000
+    volumes:
+      - static:/backend_static
+      - media:/media
+
+  frontend:
+    container_name: foodgram-frontend
+    build: ./frontend/
+    command: cp -r /app/build/. /frontend_static/
+    volumes:
+      - static:/frontend_static
+
+  gateway:
+    container_name: foodgram-gateway
+    build: ./nginx/
+    depends_on:
+      - backend
+      - frontend
+    ports:
+      - "9000:80"
+    volumes:
+      - static:/static
+      - media:/media
