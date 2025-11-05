@@ -21,7 +21,6 @@ services:
     env_file: .env
     depends_on:
       - db
-    command: gunicorn backend.wsgi:application --bind 0.0.0.0:8000
     volumes:
       - static:/backend_static
       - media:/media
@@ -38,7 +37,6 @@ services:
     build: ./nginx/
     depends_on:
       - backend
-      - frontend
     ports:
       - "9000:80"
     volumes:
