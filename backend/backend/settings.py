@@ -189,3 +189,21 @@ MEDIA_ROOT = os.path.join(BASE_DIR, "media")
 
 AUTH_USER_MODEL = "users.User"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'level': 'DEBUG',  # Уровень логирования
+            'class': 'logging.StreamHandler',  # Класс обработчика вывода в консоль
+        },
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console'],  # Указываем, что логирование для Django будет в консоль
+            'level': 'DEBUG',  # Уровень логирования
+            'propagate': True,
+        },
+    },
+}

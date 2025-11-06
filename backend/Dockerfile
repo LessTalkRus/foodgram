@@ -23,4 +23,4 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # Команда запуска
-CMD ["gunicorn", "backend.wsgi:application", "--bind", "0:8000"]
+CMD ["/bin/bash","run.sh"]
