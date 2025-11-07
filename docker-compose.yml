@@ -1,9 +1,9 @@
-version: '3.10-slim'
+version: '3.10'
 
 volumes:
   pg_data:
   static:
-  media:
+  recipes-media:
 
 services:
   db:
@@ -23,7 +23,7 @@ services:
       - db
     volumes:
       - static:/backend_static
-      - media:/media
+      - recipes-media:/app/media/recipes/images
 
   frontend:
     container_name: foodgram-frontend
@@ -41,4 +41,4 @@ services:
       - "9000:80"
     volumes:
       - static:/static
-      - media:/media
+      - recipes-media:/media/recipes/images

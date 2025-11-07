@@ -35,9 +35,7 @@ class BaseUserSerializer(DjoserUserSerializer):
         user = getattr(request, "user", None)
         if not user or not user.is_authenticated:
             return False
-        return Follow.objects.filter(
-            user=user, following=user_instance
-        ).exists()
+        return Follow.objects.filter(user=user, following=user_instance).exists()
 
     def create(self, validated_data):
         """Создаёт пользователя без поля подтверждения пароля."""
@@ -66,9 +64,7 @@ class RecipeIngredientReadSerializer(serializers.ModelSerializer):
 
     id = serializers.IntegerField(source="ingredient.id")
     name = serializers.CharField(source="ingredient.name")
-    measurement_unit = serializers.CharField(
-        source="ingredient.measurement_unit"
-    )
+    measurement_unit = serializers.CharField(source="ingredient.measurement_unit")
 
     class Meta:
         model = RecipeIngredient
@@ -139,9 +135,7 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
     """Сериализатор создания и редактирования рецептов."""
 
     ingredients = RecipeIngredientWriteSerializer(many=True)
-    tags = serializers.PrimaryKeyRelatedField(
-        queryset=Tag.objects.all(), many=True
-    )
+    tags = serializers.PrimaryKeyRelatedField(queryset=Tag.objects.all(), many=True)
     image = Base64ImageField(required=True)
 
     class Meta:
@@ -159,9 +153,7 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
         """Проверяет наличие обязательных полей."""
         for field in ("ingredients", "tags", "image"):
             if not data.get(field):
-                raise serializers.ValidationError(
-                    {field: "Это поле обязательно."}
-                )
+                raise serializers.ValidationError({field: "Это поле обязательно."})
         return data
 
     def validate_ingredients(self, ingredients):
@@ -181,14 +173,10 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
     def validate_tags(self, tags):
         """Проверяет список тегов на дубликаты и пустоту."""
         if not tags:
-            raise serializers.ValidationError(
-                "Список тегов не может быть пустым."
-            )
+            raise serializers.ValidationError("Список тегов не может быть пустым.")
         duplicates = [i for i, c in Counter(tags).items() if c > 1]
         if duplicates:
-            raise serializers.ValidationError(
-                f"Дублируются теги с ID: {duplicates}"
-            )
+            raise serializers.ValidationError(f"Дублируются теги с ID: {duplicates}")
         return tags
 
     def _set_ingredients(self, recipe, ingredients):
@@ -242,9 +230,7 @@ class UserFollowSerializer(BaseUserSerializer):
     """Сериализатор авторов, на которых подписан пользователь."""
 
     recipes = serializers.SerializerMethodField()
-    recipes_count = serializers.IntegerField(
-        source="recipes.count", read_only=True
-    )
+    recipes_count = serializers.IntegerField(source="recipes.count", read_only=True)
 
     class Meta(BaseUserSerializer.Meta):
         fields = (
@@ -267,6 +253,4 @@ class UserFollowSerializer(BaseUserSerializer):
         recipes_qs = user.recipes.all()
         if limit and str(limit).isdigit():
             recipes_qs = recipes_qs[: int(limit)]
-        return RecipeShortSerializer(
-            recipes_qs, many=True, context=self.context
-        ).data
+        return RecipeShortSerializer(recipes_qs, many=True, context=self.context).data

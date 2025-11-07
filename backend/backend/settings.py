@@ -19,13 +19,10 @@ DEBUG = os.getenv("DEBUG", "False").lower() == "true"
 ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "localhost").split(",")
 
 _raw_csrf = [
-    s.strip()
-    for s in os.getenv("CSRF_TRUSTED_ORIGINS", "").split(",")
-    if s.strip()
+    s.strip() for s in os.getenv("CSRF_TRUSTED_ORIGINS", "").split(",") if s.strip()
 ]
 CSRF_TRUSTED_ORIGINS = [
-    origin if origin.startswith("http") else f"https://{origin}"
-    for origin in _raw_csrf
+    origin if origin.startswith("http") else f"https://{origin}" for origin in _raw_csrf
 ]
 
 # -------------------------------------------------------------
@@ -152,16 +149,8 @@ AUTH_PASSWORD_VALIDATORS = [
         )
     },
     {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
-    {
-        "NAME": (
-            "django.contrib.auth.password_validation.CommonPasswordValidator"
-        )
-    },
-    {
-        "NAME": (
-            "django.contrib.auth.password_validation.NumericPasswordValidator"
-        )
-    },
+    {"NAME": ("django.contrib.auth.password_validation.CommonPasswordValidator")},
+    {"NAME": ("django.contrib.auth.password_validation.NumericPasswordValidator")},
 ]
 
 # -------------------------------------------------------------
@@ -191,19 +180,21 @@ AUTH_USER_MODEL = "users.User"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 LOGGING = {
-    'version': 1,
-    'disable_existing_loggers': False,
-    'handlers': {
-        'console': {
-            'level': 'DEBUG',  # Уровень логирования
-            'class': 'logging.StreamHandler',  # Класс обработчика вывода в консоль
+    "version": 1,
+    "disable_existing_loggers": False,
+    "handlers": {
+        "console": {
+            "level": "DEBUG",  # Уровень логирования
+            "class": "logging.StreamHandler",  # Класс обработчика вывода в консоль
         },
     },
-    'loggers': {
-        'django': {
-            'handlers': ['console'],  # Указываем, что логирование для Django будет в консоль
-            'level': 'DEBUG',  # Уровень логирования
-            'propagate': True,
+    "loggers": {
+        "django": {
+            "handlers": [
+                "console"
+            ],  # Указываем, что логирование для Django будет в консоль
+            "level": "DEBUG",  # Уровень логирования
+            "propagate": True,
         },
     },
 }

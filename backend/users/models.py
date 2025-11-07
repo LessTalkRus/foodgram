@@ -5,8 +5,7 @@ from django.db import models
 username_validator = RegexValidator(
     regex=r"^[\w.@-]+$",
     message=(
-        "Имя пользователя может содержать только буквы, цифры и "
-        "символы @ . - _"
+        "Имя пользователя может содержать только буквы, цифры и " "символы @ . - _"
     ),
 )
 
@@ -25,8 +24,7 @@ class User(AbstractUser):
         validators=[username_validator],
         verbose_name="Имя пользователя",
         help_text=(
-            "Имя пользователя. Может содержать буквы, цифры и символы "
-            "@ . - _"
+            "Имя пользователя. Может содержать буквы, цифры и символы " "@ . - _"
         ),
     )
     first_name = models.CharField(
