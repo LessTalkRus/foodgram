@@ -7,7 +7,7 @@ class Command(BaseCommand):
     help = "backfill the data"
 
     def add_arguments(self, parser):
-        parser.add_argument("email", type=str, help="user email for update")
+        parser.add_argument("email", type=str, help="Почта пользователя")
 
     def handle(self, *args, **kwargs):
         email = kwargs["email"]
@@ -19,11 +19,11 @@ class Command(BaseCommand):
             user.save()
             self.stdout.write(
                 self.style.SUCCESS(
-                    f"User {email} is now an admin, "
-                    f"a staff and forced activated."
+                    f"Пользователь {email} теперь является суперюзером,"
+                    f" имеет права staff и активен."
                 )
             )
         except User.DoesNotExist:
             self.stdout.write(
-                self.style.ERROR(f"User with email {email} not found.")
+                self.style.ERROR(f"Пользователь {email} не найден!")
             )
