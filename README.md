@@ -76,7 +76,7 @@ npm start
 ```
 
 После запуска сайт будет доступен по адресу:  
-👉 http://localhost:3000
+👉 http://localhost:9001
 
 ---
 
@@ -119,9 +119,9 @@ DB_PORT=5432
 После пуша в ветку `main`:
 1. 🧹 Проверка кода линтером `flake8`
 2. 🐳 Сборка Docker-образов:
-   - `lesstalkrus/foodgram_backend:latest`
-   - `lesstalkrus/foodgram_frontend:latest`
-   - `lesstalkrus/foodgram_gateway:latest`
+   - `DOCKER_USERNAME/foodgram_backend:latest`
+   - `DOCKER_USERNAME/foodgram_frontend:latest`
+   - `DOCKER_USERNAME/foodgram_gateway:latest`
 3. 📦 Публикация на Docker Hub  
 4. 🚀 Автоматический деплой на сервер  
 5. 🤖 Уведомление в Telegram об успешном обновлении
@@ -202,9 +202,9 @@ GET /api/recipes/download_shopping_cart/
 
 ## 🌍 Доступ и документация
 
-- **Главная страница:** https://your-domain.com  
-- **Админ-панель:** https://your-domain.com/admin/  
-- **Документация API:** `/api/docs/` или `/redoc/`
+- **Главная страница:** https://foodgram67.ddns.net/ 
+- **Админ-панель:** https://foodgram67.ddns.net/admin/  
+- **Документация API:** [https://foodgram67.ddns.net/api/docs/redoc.html](https://foodgram67.ddns.net/api/docs/redoc.html)
 
 ---
 
