@@ -4,15 +4,48 @@ on:
   push:
     branches:
       - '**'
+    paths-ignore:
+      - 'README.md'
 
 jobs:
+  # ───────────────────────────────────────────────
+  # Проверка, какие части проекта изменились
+  # ───────────────────────────────────────────────
+  check_changes:
+    name: Detect changed parts
+    runs-on: ubuntu-latest
+    outputs:
+      backend_changed: ${{ steps.filter.outputs.backend }}
+      frontend_changed: ${{ steps.filter.outputs.frontend }}
+      gateway_changed: ${{ steps.filter.outputs.gateway }}
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Detect file changes
+        id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            backend:
+              - 'backend/**'
+            frontend:
+              - 'frontend/**'
+            gateway:
+              - 'nginx/**'
+            ci:
+              - '.github/**'
+
+  # ───────────────────────────────────────────────
+  # Проверка кода линтером
+  # ───────────────────────────────────────────────
   tests:
     name: Lint backend with flake8
     runs-on: ubuntu-latest
+    needs: check_changes
 
     strategy:
       matrix:
-        python-version: ["3.8", "3.9", "3.10"]
+        python-version: ["3.10", "3.11"]
 
     steps:
       - name: Check out code
@@ -34,11 +67,16 @@ jobs:
         run: |
           python -m flake8 .
 
+  # ───────────────────────────────────────────────
+  # Backend build & push
+  # ───────────────────────────────────────────────
   build_backend_and_push:
     name: Push backend Docker image
     runs-on: ubuntu-latest
-    needs: tests
-    if: github.ref == 'refs/heads/main'
+    needs: [tests, check_changes]
+    if: >
+      github.ref == 'refs/heads/main' &&
+      needs.check_changes.outputs.backend_changed == 'true'
     steps:
       - uses: actions/checkout@v3
 
@@ -58,11 +96,16 @@ jobs:
           push: true
           tags: ${{ secrets.DOCKER_USERNAME }}/foodgram_backend:latest
 
+  # ───────────────────────────────────────────────
+  # Frontend build & push
+  # ───────────────────────────────────────────────
   build_frontend_and_push:
     name: Push frontend Docker image
     runs-on: ubuntu-latest
-    needs: tests
-    if: github.ref == 'refs/heads/main'
+    needs: [tests, check_changes]
+    if: >
+      github.ref == 'refs/heads/main' &&
+      needs.check_changes.outputs.frontend_changed == 'true'
     steps:
       - uses: actions/checkout@v3
 
@@ -82,10 +125,16 @@ jobs:
           push: true
           tags: ${{ secrets.DOCKER_USERNAME }}/foodgram_frontend:latest
 
+  # ───────────────────────────────────────────────
+  # Gateway build & push
+  # ───────────────────────────────────────────────
   build_gateway_and_push:
     name: Push gateway Docker image
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
+    needs: [check_changes]
+    if: >
+      github.ref == 'refs/heads/main' &&
+      needs.check_changes.outputs.gateway_changed == 'true'
     steps:
       - uses: actions/checkout@v3
 
@@ -105,13 +154,20 @@ jobs:
           push: true
           tags: ${{ secrets.DOCKER_USERNAME }}/foodgram_gateway:latest
 
+  # ───────────────────────────────────────────────
+  # Deploy — только если что-то реально изменилось
+  # ───────────────────────────────────────────────
   deploy:
     runs-on: ubuntu-latest
     needs:
       - build_backend_and_push
       - build_frontend_and_push
       - build_gateway_and_push
-    if: github.ref == 'refs/heads/main'
+    if: >
+      github.ref == 'refs/heads/main' &&
+      (needs.check_changes.outputs.backend_changed == 'true' ||
+      needs.check_changes.outputs.frontend_changed == 'true' ||
+      needs.check_changes.outputs.gateway_changed == 'true')
 
     steps:
       - name: Check out repo (for compose file)
@@ -141,6 +197,9 @@ jobs:
             sudo docker compose -f docker-compose.production.yml down
             sudo docker compose -f docker-compose.production.yml up -d
 
+  # ───────────────────────────────────────────────
+  # Уведомление в Telegram — только при деплое
+  # ───────────────────────────────────────────────
   notify:
     runs-on: ubuntu-latest
     needs: deploy
