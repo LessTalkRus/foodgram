@@ -1,4 +1,4 @@
-version: '3.10'
+version: '3.8'
 
 volumes:
   pg_data:
@@ -8,7 +8,6 @@ volumes:
 services:
   db:
     image: postgres:13.10
-    container_name: foodgram-db
     env_file: .env
     environment:
       - POSTGRES_DB=foodgram
@@ -16,8 +15,7 @@ services:
       - pg_data:/var/lib/postgresql/data
 
   backend:
-    container_name: foodgram-backend
-    build: ./backend/
+    image: lesstalkrus/foodgram_backend
     env_file: .env
     depends_on:
       - db
@@ -26,19 +24,18 @@ services:
       - media:/app/media
 
   frontend:
-    container_name: foodgram-frontend
-    build: ./frontend/
+    image: lesstalkrus/foodgram_frontend
     command: cp -r /app/build/. /frontend_static/
     volumes:
       - static:/frontend_static
 
   gateway:
-    container_name: foodgram-gateway
-    build: ./nginx/
+    image: lesstalkrus/foodgram_gateway
     depends_on:
       - backend
+      - frontend
     ports:
-      - "9001:80"
+      - 9001:80
     volumes:
       - static:/static
       - media:/media
