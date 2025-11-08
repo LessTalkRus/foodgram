@@ -14,7 +14,7 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **kwargs):
-        Tag.objects.get_or_create(name="General", slug="general")
+        Tag.objects.get_or_create(name="Завтрак", slug="breakfast")
 
         file_path = kwargs["filename"]
         self.stdout.write(self.style.SUCCESS(f"{file_path}"))
@@ -26,7 +26,9 @@ class Command(BaseCommand):
                     name=r["name"], measurement_unit=r["measurement_unit"]
                 )
                 if created:
-                    self.stdout.write(self.style.SUCCESS(f'Записан: {r["name"]}'))
+                    self.stdout.write(
+                        self.style.SUCCESS(f'Записан: {r["name"]}')
+                    )
                 else:
                     self.stdout.write(
                         self.style.SUCCESS(f'already exists: {r["name"]}')

@@ -20,7 +20,7 @@ class Command(BaseCommand):
             self.stdout.write(
                 self.style.SUCCESS(
                     f"User {email} is now an admin, "
-                    f"an staff and forced activated."
+                    f"a staff and forced activated."
                 )
             )
         except User.DoesNotExist:

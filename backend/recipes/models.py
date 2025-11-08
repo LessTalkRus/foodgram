@@ -13,8 +13,12 @@ class Tag(models.Model):
     фильтрации рецептов по категориям.
     """
 
-    name = models.CharField(max_length=100, unique=True, verbose_name="Название тега")
-    slug = models.SlugField(max_length=100, unique=True, verbose_name="Слаг тега")
+    name = models.CharField(
+        max_length=100, unique=True, verbose_name="Название тега"
+    )
+    slug = models.SlugField(
+        max_length=100, unique=True, verbose_name="Слаг тега"
+    )
 
     class Meta:
         """Мета-параметры модели Tag."""
@@ -23,7 +27,9 @@ class Tag(models.Model):
         verbose_name_plural = "Теги"
         ordering = ("name",)
         constraints = [
-            models.UniqueConstraint(fields=("name", "slug"), name="unique_tags")
+            models.UniqueConstraint(
+                fields=("name", "slug"), name="unique_tags"
+            )
         ]
 
     def __str__(self):
@@ -42,7 +48,9 @@ class Ingredient(models.Model):
     name = models.CharField(
         max_length=100, db_index=True, verbose_name="Название ингредиента"
     )
-    measurement_unit = models.CharField(max_length=50, verbose_name="Единица измерения")
+    measurement_unit = models.CharField(
+        max_length=50, verbose_name="Единица измерения"
+    )
 
     class Meta:
         """Мета-параметры модели Ingredient."""
@@ -85,7 +93,9 @@ class Recipe(models.Model):
         Ingredient, through="RecipeIngredient", verbose_name="Ингредиенты"
     )
     tags = models.ManyToManyField(Tag, verbose_name="Теги")
-    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Дата создания")
+    created_at = models.DateTimeField(
+        auto_now_add=True, verbose_name="Дата создания"
+    )
     cooking_time = models.PositiveIntegerField(
         validators=[MinValueValidator(1, "Минимальное значение - 1 минута.")],
         verbose_name="Время приготовления, мин.",
@@ -155,7 +165,9 @@ class BaseRecipeUserModel(models.Model):
     user = models.ForeignKey(
         User, on_delete=models.CASCADE, verbose_name="Пользователь"
     )
-    recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE, verbose_name="Рецепт")
+    recipe = models.ForeignKey(
+        Recipe, on_delete=models.CASCADE, verbose_name="Рецепт"
+    )
 
     class Meta:
         """Мета-параметры базовой модели связи User–Recipe."""
@@ -247,7 +259,9 @@ class Follow(models.Model):
         verbose_name = "Подписка"
         verbose_name_plural = "Подписки"
         constraints = [
-            models.UniqueConstraint(fields=["user", "following"], name="unique_follow")
+            models.UniqueConstraint(
+                fields=["user", "following"], name="unique_follow"
+            )
         ]
         ordering = ("user__username", "following__username")
 

@@ -36,7 +36,9 @@ class Migration(migrations.Migration):
             model_name="user",
             name="first_name",
             field=models.CharField(
-                help_text="Имя пользователя.", max_length=100, verbose_name="Имя"
+                help_text="Имя пользователя.",
+                max_length=100,
+                verbose_name="Имя",
             ),
         ),
         migrations.AlterField(

@@ -87,7 +87,9 @@ class UserViewSet(DjoserUserViewSet):
             )
             serializer.is_valid(raise_exception=True)
             serializer.save()
-            return Response({"avatar": user.avatar.url}, status=status.HTTP_200_OK)
+            return Response(
+                {"avatar": user.avatar.url}, status=status.HTTP_200_OK
+            )
 
         if user.avatar:
             user.avatar.delete(save=False)
@@ -121,7 +123,9 @@ class UserViewSet(DjoserUserViewSet):
         serializer = UserFollowSerializer(author, context={"request": request})
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-    @action(detail=False, methods=["get"], permission_classes=[IsAuthenticated])
+    @action(
+        detail=False, methods=["get"], permission_classes=[IsAuthenticated]
+    )
     def subscriptions(self, request):
         """Возвращает список авторов, на которых подписан пользователь."""
         authors = User.objects.filter(
@@ -183,6 +187,11 @@ class RecipeViewSet(viewsets.ModelViewSet):
         """Сохраняет рецепт, устанавливая автора текущим пользователем."""
         serializer.save(author=self.request.user)
 
+    def update(self, request, *args, **kwargs):
+        """Разрешает частичное обновление рецепта."""
+        kwargs["partial"] = True
+        return super().update(request, *args, **kwargs)
+
     def get_serializer_context(self):
         """Добавляет объект запроса в контекст сериализатора."""
         context = super().get_serializer_context()
@@ -204,7 +213,9 @@ class RecipeViewSet(viewsets.ModelViewSet):
             raise ValidationError("Рецепт уже добавлен.")
         model.objects.create(user=request.user, recipe=recipe)
 
-        serializer = RecipeShortSerializer(recipe, context={"request": request})
+        serializer = RecipeShortSerializer(
+            recipe, context={"request": request}
+        )
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     @action(detail=True, methods=["post", "delete"], url_path="favorite")
