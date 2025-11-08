@@ -163,17 +163,18 @@ jobs:
       - build_backend_and_push
       - build_frontend_and_push
       - build_gateway_and_push
+      - check_changes
     if: >
       github.ref == 'refs/heads/main' &&
       (needs.check_changes.outputs.backend_changed == 'true' ||
-      needs.check_changes.outputs.frontend_changed == 'true' ||
-      needs.check_changes.outputs.gateway_changed == 'true')
-
+       needs.check_changes.outputs.frontend_changed == 'true' ||
+       needs.check_changes.outputs.gateway_changed == 'true')
     steps:
       - name: Check out repo (for compose file)
         uses: actions/checkout@v3
 
       - name: Copy docker-compose.production.yml to server
+        if: always()
         uses: appleboy/scp-action@master
         with:
           host: ${{ secrets.HOST }}
@@ -184,6 +185,7 @@ jobs:
           target: "foodgram"
 
       - name: Deploy over SSH
+        if: always()
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.HOST }}
