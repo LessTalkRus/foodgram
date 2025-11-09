@@ -1,42 +1,221 @@
-version: '3.8'
+name: Main Foodgram workflow
 
-volumes:
-  pg_data:
-  static:
-  media:
+on:
+  push:
+    branches:
+      - '**'
+    paths-ignore:
+      - 'README.md'
 
-services:
-  db:
-    image: postgres:13.10
-    env_file: .env
-    environment:
-      - POSTGRES_DB=foodgram
-    volumes:
-      - pg_data:/var/lib/postgresql/data
+jobs:
+  # ───────────────────────────────────────────────
+  # Проверка, какие части проекта изменились
+  # ───────────────────────────────────────────────
+  check_changes:
+    name: Detect changed parts
+    runs-on: ubuntu-latest
+    outputs:
+      backend_changed: ${{ steps.filter.outputs.backend }}
+      frontend_changed: ${{ steps.filter.outputs.frontend }}
+      gateway_changed: ${{ steps.filter.outputs.gateway }}
+    steps:
+      - uses: actions/checkout@v3
 
-  backend:
-    image: lesstalkrus/foodgram_backend
-    env_file: .env
-    depends_on:
-      - db
-    volumes:
-      - static:/backend_static
-      - media:/app/media
+      - name: Detect file changes
+        id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            backend:
+              - 'backend/**'
+            frontend:
+              - 'frontend/**'
+            gateway:
+              - 'nginx/**'
+            ci:
+              - '.github/**'
 
-  frontend:
-    image: lesstalkrus/foodgram_frontend
-    command: cp -r /app/build/. /frontend_static/
-    volumes:
-      - static:/frontend_static
+  # ───────────────────────────────────────────────
+  # Проверка кода линтером (flake8)
+  # ───────────────────────────────────────────────
+  tests:
+    name: Lint backend with flake8
+    runs-on: ubuntu-latest
+    needs: check_changes
 
-  gateway:
-    image: lesstalkrus/foodgram_gateway
-    depends_on:
-      - backend
-      - frontend
-    ports:
-      - 9001:80
-    volumes:
-      - static:/static
-      - media:/media
-      - ./docs:/usr/share/nginx/html/docs
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.11"]
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        working-directory: backend
+        run: |
+          python -m pip install --upgrade pip setuptools
+          pip install flake8==6.0.0 flake8-isort==6.0.0
+
+      - name: Run flake8
+        working-directory: backend
+        run: python -m flake8 .
+
+  # ───────────────────────────────────────────────
+  # Backend build & push
+  # ───────────────────────────────────────────────
+  build_backend_and_push:
+    name: Push backend Docker image
+    runs-on: ubuntu-latest
+    needs: [tests, check_changes]
+    if: >
+      github.ref == 'refs/heads/main' &&
+      needs.check_changes.outputs.backend_changed == 'true'
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build & push backend
+        uses: docker/build-push-action@v4
+        with:
+          context: ./backend/
+          push: true
+          tags: ${{ secrets.DOCKER_USERNAME }}/foodgram_backend:latest
+
+  # ───────────────────────────────────────────────
+  # Frontend build & push
+  # ───────────────────────────────────────────────
+  build_frontend_and_push:
+    name: Push frontend Docker image
+    runs-on: ubuntu-latest
+    needs: [tests, check_changes]
+    if: >
+      github.ref == 'refs/heads/main' &&
+      needs.check_changes.outputs.frontend_changed == 'true'
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build & push frontend
+        uses: docker/build-push-action@v4
+        with:
+          context: ./frontend/
+          push: true
+          tags: ${{ secrets.DOCKER_USERNAME }}/foodgram_frontend:latest
+
+  # ───────────────────────────────────────────────
+  # Gateway build & push
+  # ───────────────────────────────────────────────
+  build_gateway_and_push:
+    name: Push gateway Docker image
+    runs-on: ubuntu-latest
+    needs: [check_changes]
+    if: >
+      github.ref == 'refs/heads/main' &&
+      needs.check_changes.outputs.gateway_changed == 'true'
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build & push gateway
+        uses: docker/build-push-action@v4
+        with:
+          context: ./nginx/
+          push: true
+          tags: ${{ secrets.DOCKER_USERNAME }}/foodgram_gateway:latest
+
+  # ───────────────────────────────────────────────
+  # Deploy — срабатывает, если изменён хотя бы один компонент
+  # ───────────────────────────────────────────────
+  deploy:
+    runs-on: ubuntu-latest
+    needs:
+      - build_backend_and_push
+      - build_frontend_and_push
+      - build_gateway_and_push
+      - check_changes
+    if: >
+      github.ref == 'refs/heads/main' &&
+      (needs.check_changes.outputs.backend_changed == 'true' ||
+       needs.check_changes.outputs.frontend_changed == 'true' ||
+       needs.check_changes.outputs.gateway_changed == 'true')
+    steps:
+      - name: Check out repo (for compose file)
+        uses: actions/checkout@v3
+
+      - name: Copy docker-compose.production.yml to server
+        if: always()
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USER }}
+          key: ${{ secrets.SSH_KEY }}
+          passphrase: ${{ secrets.SSH_PASSPHRASE }}
+          source: "docker-compose.production.yml"
+          target: "foodgram"
+
+      - name: Deploy over SSH
+        if: always()
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USER }}
+          key: ${{ secrets.SSH_KEY }}
+          passphrase: ${{ secrets.SSH_PASSPHRASE }}
+          script: |
+            set -e
+            cd foodgram
+            sudo docker compose -f docker-compose.production.yml pull
+            sudo docker compose -f docker-compose.production.yml down
+            sudo docker compose -f docker-compose.production.yml up -d
+
+  # ───────────────────────────────────────────────
+  # Уведомление в Telegram — только при деплое
+  # ───────────────────────────────────────────────
+  notify:
+    runs-on: ubuntu-latest
+    needs: deploy
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Telegram notify
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_TO }}
+          token: ${{ secrets.TELEGRAM_TOKEN }}
+          message: |
+            ✅ Foodgram: деплой завершён
+            Репозиторий: ${{ github.repository }}
+            Ветка: ${{ github.ref_name }}
+            Автор: ${{ github.actor }}
+            Коммит: ${{ github.event.head_commit.message }}
+            SHA: ${{ github.sha }}
+            Ссылка: https://github.com/${{ github.repository }}/commit/${{ github.sha }}
