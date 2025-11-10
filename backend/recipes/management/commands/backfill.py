@@ -21,7 +21,7 @@ class Command(BaseCommand):
             ("Обед", "lunch"),
             ("Ужин", "dinner"),
             ("Закуски", "snacks"),
-            # ("Супы", "soups"),
+            # ("Супы",  "soups"),
             # ("Десерты", "desserts"),
             # ("Выпечка", "baking"),
             # ("Пицца", "pizza"),
