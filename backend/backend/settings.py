@@ -4,6 +4,8 @@ from pathlib import Path
 from django.core.management.utils import get_random_secret_key
 from dotenv import load_dotenv
 
+from backend.constants import DEFAULT_PAGE_SIZE
+
 load_dotenv()
 
 # -------------------------------------------------------------
@@ -47,9 +49,9 @@ INSTALLED_APPS = [
     "django_filters",
     "drf_yasg",
     # Локальные приложения
-    "api.apps.ApiConfig",
     "users.apps.UsersConfig",
     "recipes.apps.RecipesConfig",
+    "api.apps.ApiConfig",
 ]
 
 # -------------------------------------------------------------
@@ -117,7 +119,7 @@ REST_FRAMEWORK = {
         "rest_framework.authentication.TokenAuthentication",
     ],
     "DEFAULT_PAGINATION_CLASS": "api.pagination.CustomPagination",
-    "PAGE_SIZE": 6,
+    "PAGE_SIZE": DEFAULT_PAGE_SIZE,
 }
 
 # -------------------------------------------------------------
@@ -131,7 +133,6 @@ DJOSER = {
     "HIDE_USERS": False,
     "SERIALIZERS": {
         "user": "api.serializers.BaseUserSerializer",
-        "user_create": "djoser.serializers.UserCreateSerializer",
         "current_user": "api.serializers.BaseUserSerializer",
     },
     "PERMISSIONS": {
@@ -189,23 +190,3 @@ MEDIA_ROOT = os.path.join(BASE_DIR, "media")
 
 AUTH_USER_MODEL = "users.User"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
-
-# LOGGING = {
-#     "version": 1,
-#     "disable_existing_loggers": False,
-#     "handlers": {
-#         "console": {
-#             "level": "DEBUG",
-#             "class": "logging.StreamHandler",
-#         },
-#     },
-#     "loggers": {
-#         "django": {
-#             "handlers": [
-#                 "console"
-#             ],
-#             "level": "DEBUG",
-#             "propagate": True,
-#         },
-#     },
-# }
