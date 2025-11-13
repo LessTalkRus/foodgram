@@ -2,7 +2,12 @@ from django.contrib.auth import get_user_model
 from django.core.validators import MinValueValidator
 from django.db import models
 
-from backend.constants import TAG_LENGTH, MEASURE_LENGTH, INGREDIENT_LENGTH, MIN_COOK_TIME
+from backend.constants import (
+    TAG_LENGTH,
+    MEASURE_LENGTH,
+    INGREDIENT_LENGTH,
+    MIN_COOK_TIME,
+)
 
 User = get_user_model()
 
@@ -50,11 +55,10 @@ class Ingredient(models.Model):
     name = models.CharField(
         max_length=INGREDIENT_LENGTH,
         db_index=True,
-        verbose_name="Название ингредиента"
+        verbose_name="Название ингредиента",
     )
     measurement_unit = models.CharField(
-        max_length=MEASURE_LENGTH,
-        verbose_name="Единица измерения"
+        max_length=MEASURE_LENGTH, verbose_name="Единица измерения"
     )
 
     class Meta:
@@ -105,7 +109,7 @@ class Recipe(models.Model):
         validators=[
             MinValueValidator(
                 MIN_COOK_TIME,
-                "Минимальное значение - {MIN_COOK_TIME} минут(а)."
+                "Минимальное значение - {MIN_COOK_TIME} минут(а).",
             )
         ],
         verbose_name="Время приготовления, мин.",

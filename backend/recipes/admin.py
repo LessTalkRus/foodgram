@@ -22,8 +22,7 @@ class RecipeIngredientInlineFormSet(forms.BaseInlineFormSet):
     def clean(self):
         super().clean()
         has_ingredient = any(
-            form.cleaned_data
-            and not form.cleaned_data.get("DELETE", False)
+            form.cleaned_data and not form.cleaned_data.get("DELETE", False)
             for form in self.forms
         )
         if not has_ingredient:
@@ -45,8 +44,7 @@ class TagInlineFormSet(forms.BaseInlineFormSet):
     def clean(self):
         super().clean()
         has_tag = any(
-            form.cleaned_data
-            and not form.cleaned_data.get("DELETE", False)
+            form.cleaned_data and not form.cleaned_data.get("DELETE", False)
             for form in self.forms
         )
         if not has_tag:
