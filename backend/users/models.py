@@ -1,28 +1,23 @@
 from django.contrib.auth.models import AbstractUser
-from django.core.validators import RegexValidator
+from django.contrib.auth.validators import UnicodeUsernameValidator
 from django.db import models
 
-username_validator = RegexValidator(
-    regex=r"^[\w.@-]+$",
-    message=(
-        "Имя пользователя может содержать только буквы, цифры и "
-        "символы @ . - _"
-    ),
-)
+from backend.constants import EMAIL_LENGTH, NICKNAME_LENGTH, NAME_LENGTH
 
 
 class User(AbstractUser):
     """Модель пользователя проекта Foodgram."""
 
     email = models.EmailField(
+        max_length=EMAIL_LENGTH,
         unique=True,
         verbose_name="Электронная почта",
         help_text="Уникальный адрес электронной почты пользователя.",
     )
     username = models.CharField(
-        max_length=100,
+        max_length=NICKNAME_LENGTH,
         unique=True,
-        validators=[username_validator],
+        validators=[UnicodeUsernameValidator()],
         verbose_name="Имя пользователя",
         help_text=(
             "Имя пользователя. Может содержать буквы, цифры и символы "
@@ -30,12 +25,12 @@ class User(AbstractUser):
         ),
     )
     first_name = models.CharField(
-        max_length=100,
+        max_length=NAME_LENGTH,
         verbose_name="Имя",
         help_text="Имя пользователя.",
     )
     last_name = models.CharField(
-        max_length=100,
+        max_length=NAME_LENGTH,
         verbose_name="Фамилия",
         help_text="Фамилия пользователя.",
     )
@@ -55,7 +50,7 @@ class User(AbstractUser):
 
         verbose_name = "Пользователь"
         verbose_name_plural = "Пользователи"
-        ordering = ("id",)
+        ordering = ("first_name",)
 
     def __str__(self):
         """Возвращает строковое представление пользователя (username)."""
