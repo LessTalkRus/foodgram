@@ -95,7 +95,7 @@ class RecipeReadSerializer(serializers.ModelSerializer):
     author = BaseUserSerializer(read_only=True)
     tags = TagSerializer(many=True, read_only=True)
     ingredients = RecipeIngredientReadSerializer(
-        source="recipe_ingredients", many=True, read_only=True
+        source="recipeingredients", many=True, read_only=True
     )
     is_favorited = serializers.SerializerMethodField()
     is_in_shopping_cart = serializers.SerializerMethodField()
@@ -239,7 +239,7 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
         if tags is not None:
             instance.tags.set(tags)
         if ingredients is not None:
-            instance.recipe_ingredients.all().delete()
+            instance.recipeingredients.all().delete()
             self._set_ingredients(instance, ingredients)
         return super().update(instance, validated_data)
 

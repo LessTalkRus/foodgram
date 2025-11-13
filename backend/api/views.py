@@ -171,7 +171,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
     """CRUD для рецептов с дополнительными действиями."""
 
     queryset = Recipe.objects.select_related("author").prefetch_related(
-        "tags", "recipe_ingredients__ingredient"
+        "tags", "recipeingredients__ingredient"
     )
     filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
     filterset_class = RecipeFilter
