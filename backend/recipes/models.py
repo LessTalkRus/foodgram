@@ -134,13 +134,11 @@ class RecipeIngredient(models.Model):
     recipe = models.ForeignKey(
         Recipe,
         on_delete=models.CASCADE,
-        related_name="recipe_ingredients",
         verbose_name="Рецепт",
     )
     ingredient = models.ForeignKey(
         Ingredient,
         on_delete=models.CASCADE,
-        related_name="ingredient_recipes",
         verbose_name="Ингредиент",
     )
     amount = models.PositiveIntegerField(
@@ -151,6 +149,7 @@ class RecipeIngredient(models.Model):
     class Meta:
         """Мета-параметры модели RecipeIngredient."""
 
+        default_related_name = "recipeingredients"
         verbose_name = "Ингредиент в рецепте"
         verbose_name_plural = "Ингредиенты в рецептах"
         constraints = [
@@ -206,12 +205,6 @@ class Favorite(BaseRecipeUserModel):
         default_related_name = "favorites"
         verbose_name = "Избранное"
         verbose_name_plural = "Избранное"
-        constraints = [
-            models.UniqueConstraint(
-                fields=["user", "recipe"],
-                name="unique_favorite_recipe_per_user",
-            )
-        ]
 
     def __str__(self):
         """Возвращает строковое представление избранного рецепта."""
@@ -232,11 +225,6 @@ class ShoppingCart(BaseRecipeUserModel):
         default_related_name = "shopping_cart"
         verbose_name = "Список покупок"
         verbose_name_plural = "Списки покупок"
-        constraints = [
-            models.UniqueConstraint(
-                fields=["user", "recipe"], name="unique_shopping_cart"
-            )
-        ]
 
     def __str__(self):
         """Возвращает строковое представление записи корзины."""
