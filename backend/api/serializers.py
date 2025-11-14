@@ -7,7 +7,6 @@ from rest_framework import serializers
 from backend.constants import AMOUNT_MIN_VALUE
 from recipes.models import Follow, Ingredient, Recipe, RecipeIngredient, Tag
 
-
 User = get_user_model()
 
 
