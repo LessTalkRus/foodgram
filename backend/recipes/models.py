@@ -3,10 +3,10 @@ from django.core.validators import MinValueValidator
 from django.db import models
 
 from backend.constants import (
-    TAG_LENGTH,
-    MEASURE_LENGTH,
     INGREDIENT_LENGTH,
+    MEASURE_LENGTH,
     MIN_COOK_TIME,
+    TAG_LENGTH,
 )
 
 User = get_user_model()
