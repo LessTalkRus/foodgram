@@ -17,18 +17,18 @@ class BaseUserSerializer(DjoserUserSerializer):
 
     class Meta(DjoserUserSerializer.Meta):
         model = User
-        fields = (*DjoserUserSerializer.Meta.fields, "avatar", "is_subscribed")
+        fields = (*DjoserUserSerializer.Meta.fields,
+                  "avatar",
+                  "is_subscribed")
 
     def get_is_subscribed(self, user_instance):
-        """Возвращает True, если текущий пользователь подписан на автора."""
+        """Проверяет подписку на автора через related_name=followers."""
         request = self.context.get("request")
         user = getattr(request, "user", None)
         return (
             user
             and user.is_authenticated
-            and Follow.objects.filter(
-                user=user, following=user_instance
-            ).exists()
+            and user.followers.filter(following=user_instance).exists()
         )
 
 
@@ -68,7 +68,10 @@ class RecipeIngredientWriteSerializer(serializers.ModelSerializer):
     id = serializers.PrimaryKeyRelatedField(
         queryset=Ingredient.objects.all(), source="ingredient"
     )
-    amount = serializers.IntegerField(min_value=AMOUNT_MIN_VALUE)
+    amount = serializers.IntegerField(
+        min_value=AMOUNT_MIN_VALUE,
+        max_value=10000  # разумный максимум
+    )
 
     class Meta:
         model = RecipeIngredient
@@ -81,7 +84,9 @@ class RecipeReadSerializer(serializers.ModelSerializer):
     author = BaseUserSerializer(read_only=True)
     tags = TagSerializer(many=True, read_only=True)
     ingredients = RecipeIngredientReadSerializer(
-        source="recipeingredients", many=True, read_only=True
+        source="recipeingredients",
+        many=True,
+        read_only=True
     )
     image = serializers.SerializerMethodField()
     is_favorited = serializers.SerializerMethodField()
@@ -105,25 +110,22 @@ class RecipeReadSerializer(serializers.ModelSerializer):
     def get_image(self, obj):
         """Возвращает абсолютный URL изображения рецепта."""
         request = self.context.get("request")
-        if obj.image and hasattr(obj.image, "url"):
-            return request.build_absolute_uri(obj.image.url)
-        return ""
+        return (
+            request.build_absolute_uri(obj.image.url)
+            if obj.image and hasattr(obj.image, "url")
+            else ""
+        )
+
+    def _check_relation(self, manager):
+        """Универсальная проверка избранного/корзины."""
+        user = self.context["request"].user
+        return user.is_authenticated and manager.filter(user=user).exists()
 
     def get_is_favorited(self, recipe):
-        """Возвращает True, если рецепт добавлен в избранное."""
-        user = self.context["request"].user
-        return (
-            user.is_authenticated
-            and recipe.favorites.filter(user=user).exists()
-        )
+        return self._check_relation(recipe.favorites)
 
     def get_is_in_shopping_cart(self, recipe):
-        """Возвращает True, если рецепт в списке покупок."""
-        user = self.context["request"].user
-        return (
-            user.is_authenticated
-            and recipe.shopping_cart.filter(user=user).exists()
-        )
+        return self._check_relation(recipe.shopping_carts)
 
 
 class RecipeWriteSerializer(serializers.ModelSerializer):
@@ -133,7 +135,7 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
     tags = serializers.PrimaryKeyRelatedField(
         queryset=Tag.objects.all(), many=True
     )
-    image = Base64ImageField(required=False, allow_null=True)
+    image = Base64ImageField()
 
     class Meta:
         model = Recipe
@@ -146,49 +148,41 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
             "cooking_time",
         )
 
-    def validate_image(self, image):
-        """Проверяет, что изображение нельзя очистить при редактировании."""
-        request = self.context.get("request")
-        method = getattr(request, "method", "").upper()
-        if method in ("PUT", "PATCH") and image in (None, "", []):
-            raise serializers.ValidationError(
-                "Нельзя удалить изображение рецепта."
-            )
-        return image
-
     def validate(self, data):
-        """Проверяет обязательные поля и наличие изображения при создании."""
-        request = self.context.get("request")
-        method = getattr(request, "method", "").upper()
+        """Общая валидация: изображение, теги, ингредиенты."""
+        ingredients = data.get("ingredients")
+        tags = data.get("tags")
 
-        if method == "POST" and not data.get("image"):
+        if not data.get("image"):
             raise serializers.ValidationError(
-                {"image": "Изображение обязательно для нового рецепта."}
+                {"image": "Картинка обязательное поле для рецепта."}
             )
 
-        for field in ("ingredients", "tags"):
-            if not data.get(field):
-                raise serializers.ValidationError(
-                    {field: "Это поле обязательно."}
-                )
+        if not ingredients:
+            raise serializers.ValidationError(
+                {"ingredients": "Это поле обязательно."}
+            )
+
+        if not tags:
+            raise serializers.ValidationError(
+                {"tags": "Это поле обязательно."}
+            )
+
+        # проверка дублей ингредиентов
+        ingredient_ids = [item["ingredient"].id for item in ingredients]
+        if len(ingredient_ids) != len(set(ingredient_ids)):
+            raise serializers.ValidationError(
+                {"ingredients": "Список ингредиентов содержит дубликаты."}
+            )
+
+        # проверка дублей тегов
+        tag_ids = [tag.id for tag in tags]
+        if len(tag_ids) != len(set(tag_ids)):
+            raise serializers.ValidationError(
+                {"tags": "Список тегов содержит дубликаты."}
+            )
+
         return data
-
-    def validate_ingredients(self, ingredients):
-        """Проверяет ингредиенты на дубли."""
-        ids = [item["ingredient"].id for item in ingredients]
-        if len(ids) != len(set(ids)):
-            raise serializers.ValidationError(
-                "Список ингредиентов содержит дубликаты."
-            )
-        return ingredients
-
-    def validate_tags(self, tags):
-        """Проверяет теги на дубли."""
-        if len(tags) != len(set(tags)):
-            raise serializers.ValidationError(
-                "Список тегов содержит дубликаты."
-            )
-        return tags
 
     def _set_ingredients(self, recipe, ingredients):
         """Создаёт связи ингредиентов с рецептом."""
@@ -212,11 +206,16 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
         """Обновляет рецепт и связанные объекты."""
-        tags = validated_data.pop("tags")
-        ingredients = validated_data.pop("ingredients")
-        instance.tags.set(tags)
-        instance.recipeingredients.all().delete()
-        self._set_ingredients(instance, ingredients)
+        tags = validated_data.pop("tags", None)
+        ingredients = validated_data.pop("ingredients", None)
+
+        if tags is not None:
+            instance.tags.set(tags)
+
+        if ingredients is not None:
+            instance.recipeingredients.all().delete()
+            self._set_ingredients(instance, ingredients)
+
         return super().update(instance, validated_data)
 
     def to_representation(self, instance):
@@ -234,11 +233,12 @@ class RecipeShortSerializer(serializers.ModelSerializer):
         fields = ("id", "name", "image", "cooking_time")
 
     def get_image(self, obj):
-        """Возвращает абсолютный URL изображения рецепта."""
         request = self.context.get("request")
-        if obj.image and hasattr(obj.image, "url"):
-            return request.build_absolute_uri(obj.image.url)
-        return ""
+        return (
+            request.build_absolute_uri(obj.image.url)
+            if obj.image and hasattr(obj.image, "url")
+            else ""
+        )
 
 
 class UserFollowSerializer(BaseUserSerializer):
@@ -250,14 +250,7 @@ class UserFollowSerializer(BaseUserSerializer):
     )
 
     class Meta(BaseUserSerializer.Meta):
-        fields = (
-            "id",
-            "email",
-            "username",
-            "first_name",
-            "last_name",
-            "avatar",
-            "is_subscribed",
+        fields = BaseUserSerializer.Meta.fields + (
             "recipes",
             "recipes_count",
         )
@@ -270,5 +263,7 @@ class UserFollowSerializer(BaseUserSerializer):
         if limit and str(limit).isdigit():
             recipes_qs = recipes_qs[: int(limit)]
         return RecipeShortSerializer(
-            recipes_qs, many=True, context=self.context
+            recipes_qs,
+            many=True,
+            context=self.context,
         ).data
