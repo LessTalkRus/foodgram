@@ -85,7 +85,8 @@ class UserViewSet(DjoserUserViewSet):
             serializer.is_valid(raise_exception=True)
             serializer.save()
             return Response(
-                {"avatar": user.avatar.url}, status=status.HTTP_200_OK
+                {"avatar": user.avatar.url},
+                status=status.HTTP_200_OK,
             )
 
         if user.avatar:
@@ -105,10 +106,14 @@ class UserViewSet(DjoserUserViewSet):
         user = request.user
 
         if request.method == "DELETE":
-            follow = Follow.objects.filter(user=user, following=author)
-            if not follow.exists():
-                raise ValidationError("Вы не подписаны на этого пользователя.")
-            follow.delete()
+            deleted_count, _ = Follow.objects.filter(
+                user=user,
+                following=author,
+            ).delete()
+            if deleted_count == 0:
+                raise ValidationError(
+                    "Вы не подписаны на этого пользователя."
+                )
             return Response(status=status.HTTP_204_NO_CONTENT)
 
         if user == author:
@@ -121,21 +126,23 @@ class UserViewSet(DjoserUserViewSet):
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     @action(
-        detail=False, methods=["get"], permission_classes=[IsAuthenticated]
-    )
-    @action(
-        detail=False, methods=["get"], permission_classes=[IsAuthenticated]
+        detail=False,
+        methods=["get"],
+        permission_classes=[IsAuthenticated],
     )
     def subscriptions(self, request):
         """Возвращает список авторов, на которых подписан пользователь."""
         authors = User.objects.filter(
             id__in=Follow.objects.filter(user=request.user).values_list(
-                "following", flat=True
+                "following",
+                flat=True,
             )
         )
         page = self.paginate_queryset(authors)
         serializer = UserFollowSerializer(
-            page, many=True, context={"request": request}
+            page,
+            many=True,
+            context={"request": request},
         )
         return self.get_paginated_response(serializer.data)
 
@@ -166,7 +173,8 @@ class RecipeViewSet(viewsets.ModelViewSet):
     """CRUD для рецептов с дополнительными действиями."""
 
     queryset = Recipe.objects.select_related("author").prefetch_related(
-        "tags", "recipeingredients__ingredient"
+        "tags",
+        "recipeingredients__ingredient",
     )
     filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
     filterset_class = RecipeFilter
@@ -182,24 +190,14 @@ class RecipeViewSet(viewsets.ModelViewSet):
         """Сохраняет рецепт, устанавливая автора текущим пользователем."""
         serializer.save(author=self.request.user)
 
-    def update(self, request, *args, **kwargs):
-        """Разрешает частичное обновление рецепта."""
-        kwargs["partial"] = True
-        return super().update(request, *args, **kwargs)
-
-    def get_serializer_context(self):
-        """Добавляет объект запроса в контекст сериализатора."""
-        context = super().get_serializer_context()
-        context.update({"request": self.request})
-        return context
-
     def _toggle_relation(self, model, recipe_id, user, request):
         """Добавляет или удаляет рецепт в связанной модели."""
         recipe = get_object_or_404(Recipe, pk=recipe_id)
 
         if request.method == "DELETE":
             deleted_count, _ = model.objects.filter(
-                user=user, recipe=recipe
+                user=user,
+                recipe=recipe,
             ).delete()
 
             if deleted_count == 0:
@@ -213,7 +211,8 @@ class RecipeViewSet(viewsets.ModelViewSet):
         model.objects.create(user=user, recipe=recipe)
 
         serializer = RecipeShortSerializer(
-            recipe, context={"request": request}
+            recipe,
+            context={"request": request},
         )
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
@@ -227,18 +226,9 @@ class RecipeViewSet(viewsets.ModelViewSet):
         """Добавляет или удаляет рецепт из списка покупок."""
         return self._toggle_relation(ShoppingCart, pk, request.user, request)
 
-    def _generate_shopping_cart_text(self, user):
-        """Генерирует текстовый список покупок для пользователя."""
-        recipes = Recipe.objects.filter(shopping_cart__user=user)
-
-        ingredients = (
-            RecipeIngredient.objects.filter(recipe__in=recipes)
-            .values("ingredient__name", "ingredient__measurement_unit")
-            .annotate(total_amount=Sum("amount"))
-            .order_by("ingredient__name")
-        )
-
-        return render_to_string(
+    def _create_shopping_cart_file(self, user, ingredients, recipes):
+        """Формирует текстовый файл списка покупок и возвращает FileResponse."""
+        text = render_to_string(
             "shopping_cart_list.txt",
             {
                 "user": user,
@@ -247,16 +237,6 @@ class RecipeViewSet(viewsets.ModelViewSet):
                 "recipes": recipes,
             },
         )
-
-    @action(
-        detail=False,
-        methods=["get"],
-        url_path="download_shopping_cart",
-        permission_classes=[IsAuthenticated],
-    )
-    def download_shopping_cart(self, request):
-        """Отдаёт список покупок через FileResponse."""
-        text = self._generate_shopping_cart_text(request.user)
 
         buffer = BytesIO()
         buffer.write(text.encode("utf-8"))
@@ -268,6 +248,30 @@ class RecipeViewSet(viewsets.ModelViewSet):
             filename="shopping_cart_list.txt",
             content_type="text/plain",
         )
+
+    @action(
+        detail=False,
+        methods=["get"],
+        url_path="download_shopping_cart",
+        permission_classes=[IsAuthenticated],
+    )
+    def download_shopping_cart(self, request):
+        """Отдаёт список покупок через FileResponse."""
+        user = request.user
+
+        recipes = Recipe.objects.filter(shopping_carts__user=user)
+
+        ingredients = (
+            RecipeIngredient.objects.filter(recipe__in=recipes)
+            .values(
+                "ingredient__name",
+                "ingredient__measurement_unit",
+            )
+            .annotate(total_amount=Sum("amount"))
+            .order_by("ingredient__name")
+        )
+
+        return self._create_shopping_cart_file(user, ingredients, recipes)
 
     @action(
         detail=True,
