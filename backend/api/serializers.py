@@ -106,9 +106,7 @@ class RecipeReadSerializer(serializers.ModelSerializer):
     def get_image(self, obj):
         """Возвращает абсолютный URL изображения рецепта."""
         request = self.context.get("request")
-        if obj.image and hasattr(obj.image, "url"):
-            return request.build_absolute_uri(obj.image.url)
-        return ""
+        return request.build_absolute_uri(obj.image.url)
 
     def __is_in(self, recipe, manager_name):
         """
@@ -159,47 +157,37 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
             "cooking_time",
         )
 
-    def validate_image(self, image):
-        """Проверяет, что изображение нельзя очистить при редактировании."""
-        if not image:
-            raise serializers.ValidationError(
-                "Картинка обязательное поле."
-            )
-        return image
-
     def validate(self, data):
-        """Проверяет обязательные поля и наличие изображения при создании."""
-        request = self.context.get("request")
-        method = getattr(request, "method", "").upper()
-
-        if method == "POST" and not data.get("image"):
-            raise serializers.ValidationError(
-                {"image": "Изображение обязательно для нового рецепта."}
-            )
-
-        for field in ("ingredients", "tags"):
+        """
+        Комплексная валидация рецепта:
+        - проверка обязательных полей (ingredients, tags, image);
+        - проверка на дубликаты ингредиентов;
+        - проверка на дубликаты тегов.
+        """
+        # Проверка обязательных полей (POST)
+        for field in ("ingredients", "tags", "image"):
             if not data.get(field):
                 raise serializers.ValidationError(
                     {field: "Это поле обязательно."}
                 )
-        return data
 
-    def validate_ingredients(self, ingredients):
-        """Проверяет ингредиенты на дубли."""
-        ids = [item["ingredient"].id for item in ingredients]
-        if len(ids) != len(set(ids)):
+        ingredients = data.get("ingredients", [])
+        tags = data.get("tags", [])
+
+        # Проверка дубликатов ингредиентов
+        ingredient_ids = [item["ingredient"].id for item in ingredients]
+        if len(ingredient_ids) != len(set(ingredient_ids)):
             raise serializers.ValidationError(
-                "Список ингредиентов содержит дубликаты."
+                {"ingredients": "Список ингредиентов содержит дубликаты."}
             )
-        return ingredients
 
-    def validate_tags(self, tags):
-        """Проверяет теги на дубли."""
+        # Проверка дубликатов тегов
         if len(tags) != len(set(tags)):
             raise serializers.ValidationError(
-                "Список тегов содержит дубликаты."
+                {"tags": "Список тегов содержит дубликаты."}
             )
-        return tags
+
+        return data
 
     def _set_ingredients(self, recipe, ingredients):
         """Создаёт связи ингредиентов с рецептом."""
