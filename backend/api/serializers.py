@@ -149,11 +149,9 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
 
     def validate_image(self, image):
         """Проверяет, что изображение нельзя очистить при редактировании."""
-        request = self.context.get("request")
-        method = getattr(request, "method", "").upper()
-        if method in ("PUT", "PATCH") and image in (None, "", []):
+        if not image:
             raise serializers.ValidationError(
-                "Нельзя удалить изображение рецепта."
+                "Картинка обязательное поле."
             )
         return image
 
@@ -228,18 +226,9 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
 class RecipeShortSerializer(serializers.ModelSerializer):
     """Короткий вариант рецепта для вложенных списков."""
 
-    image = serializers.SerializerMethodField()
-
     class Meta:
         model = Recipe
         fields = ("id", "name", "image", "cooking_time")
-
-    def get_image(self, obj):
-        """Возвращает абсолютный URL изображения рецепта."""
-        request = self.context.get("request")
-        if obj.image and hasattr(obj.image, "url"):
-            return request.build_absolute_uri(obj.image.url)
-        return ""
 
 
 class UserFollowSerializer(BaseUserSerializer):
