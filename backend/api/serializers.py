@@ -110,21 +110,33 @@ class RecipeReadSerializer(serializers.ModelSerializer):
             return request.build_absolute_uri(obj.image.url)
         return ""
 
-    def get_is_favorited(self, recipe):
-        """Возвращает True, если рецепт добавлен в избранное."""
+    def __is_in(self, recipe, manager_name):
+        """
+        Универсальная проверка принадлежности рецепта к связанному списку
+        (например, избранное или корзина).
+
+        Параметры:
+            recipe (Recipe): объект рецепта.
+            manager_name (str): имя related_name менеджера
+                (например, "favorites" или "shopping_carts").
+
+        Возвращает:
+            bool: True, если пользователь аутентифицирован и рецепт есть в указанной связи.
+        """
         user = self.context["request"].user
-        return (
-            user.is_authenticated
-            and recipe.favorites.filter(user=user).exists()
-        )
+        if not user.is_authenticated:
+            return False
+        return getattr(recipe, manager_name).filter(user=user).exists()
+
+
+    def get_is_favorited(self, recipe):
+        """Возвращает True, если текущий пользователь добавил рецепт в избранное."""
+        return self.__is_in(recipe, "favorites")
+
 
     def get_is_in_shopping_cart(self, recipe):
-        """Возвращает True, если рецепт в списке покупок."""
-        user = self.context["request"].user
-        return (
-            user.is_authenticated
-            and recipe.shopping_carts.filter(user=user).exists()
-        )
+        """Возвращает True, если текущий пользователь добавил рецепт в список покупок."""
+        return self.__is_in(recipe, "shopping_carts")
 
 
 class RecipeWriteSerializer(serializers.ModelSerializer):
