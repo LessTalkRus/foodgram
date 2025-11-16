@@ -1,8 +1,9 @@
 from django.contrib.auth import get_user_model
-from django.core.validators import MinValueValidator
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 
 from backend.constants import (
+    AMOUNT_MAX_VALUE,
     AMOUNT_MIN_VALUE,
     INGREDIENT_LENGTH,
     MEASURE_LENGTH,
@@ -151,8 +152,12 @@ class RecipeIngredient(models.Model):
         validators=[
             MinValueValidator(
                 AMOUNT_MIN_VALUE,
-                "Минимальное количество - {AMOUNT_MIN_VALUE}."
-            )
+                "Минимальное количество - {AMOUNT_MIN_VALUE}.",
+            ),
+            MaxValueValidator(
+                AMOUNT_MAX_VALUE,
+                "Максимальное количество - {AMOUNT_MAX_VALUE}.",
+            ),
         ],
     )
 

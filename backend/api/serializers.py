@@ -3,8 +3,8 @@ from djoser.serializers import UserSerializer as DjoserUserSerializer
 from drf_extra_fields.fields import Base64ImageField
 from rest_framework import serializers
 
-from backend.constants import AMOUNT_MIN_VALUE
-from recipes.models import Follow, Ingredient, Recipe, RecipeIngredient, Tag
+from backend.constants import AMOUNT_MAX_VALUE, AMOUNT_MIN_VALUE
+from recipes.models import Ingredient, Recipe, RecipeIngredient, Tag
 
 User = get_user_model()
 
@@ -26,9 +26,7 @@ class BaseUserSerializer(DjoserUserSerializer):
         return (
             user
             and user.is_authenticated
-            and Follow.objects.filter(
-                user=user, following=user_instance
-            ).exists()
+            and user.followers.filter(following=user_instance).exists()
         )
 
 
@@ -68,7 +66,10 @@ class RecipeIngredientWriteSerializer(serializers.ModelSerializer):
     id = serializers.PrimaryKeyRelatedField(
         queryset=Ingredient.objects.all(), source="ingredient"
     )
-    amount = serializers.IntegerField(min_value=AMOUNT_MIN_VALUE)
+    amount = serializers.IntegerField(
+        min_value=AMOUNT_MIN_VALUE,
+        max_value=AMOUNT_MAX_VALUE,
+    )
 
     class Meta:
         model = RecipeIngredient
