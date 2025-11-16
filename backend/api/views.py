@@ -123,9 +123,6 @@ class UserViewSet(DjoserUserViewSet):
     @action(
         detail=False, methods=["get"], permission_classes=[IsAuthenticated]
     )
-    @action(
-        detail=False, methods=["get"], permission_classes=[IsAuthenticated]
-    )
     def subscriptions(self, request):
         """Возвращает список авторов, на которых подписан пользователь."""
         authors = User.objects.filter(
@@ -229,7 +226,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
     def _generate_shopping_cart_text(self, user):
         """Генерирует текстовый список покупок для пользователя."""
-        recipes = Recipe.objects.filter(shopping_cart__user=user)
+        recipes = Recipe.objects.filter(shopping_carts__user=user)
 
         ingredients = (
             RecipeIngredient.objects.filter(recipe__in=recipes)

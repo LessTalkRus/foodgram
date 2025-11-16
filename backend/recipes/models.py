@@ -3,6 +3,7 @@ from django.core.validators import MinValueValidator
 from django.db import models
 
 from backend.constants import (
+    AMOUNT_MIN_VALUE,
     INGREDIENT_LENGTH,
     MEASURE_LENGTH,
     MIN_COOK_TIME,
@@ -147,7 +148,12 @@ class RecipeIngredient(models.Model):
     )
     amount = models.PositiveIntegerField(
         verbose_name="Количество",
-        validators=[MinValueValidator(1, "Минимальное количество - 1.")],
+        validators=[
+            MinValueValidator(
+                AMOUNT_MIN_VALUE,
+                "Минимальное количество - {AMOUNT_MIN_VALUE}."
+            )
+        ],
     )
 
     class Meta:
@@ -226,7 +232,7 @@ class ShoppingCart(BaseRecipeUserModel):
     class Meta(BaseRecipeUserModel.Meta):
         """Мета-параметры модели ShoppingCart."""
 
-        default_related_name = "shopping_cart"
+        default_related_name = "shopping_carts"
         verbose_name = "Список покупок"
         verbose_name_plural = "Списки покупок"
 
