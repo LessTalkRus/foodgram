@@ -180,17 +180,6 @@ class RecipeViewSet(viewsets.ModelViewSet):
         """Сохраняет рецепт, устанавливая автора текущим пользователем."""
         serializer.save(author=self.request.user)
 
-    def update(self, request, *args, **kwargs):
-        """Разрешает частичное обновление рецепта."""
-        kwargs["partial"] = True
-        return super().update(request, *args, **kwargs)
-
-    def get_serializer_context(self):
-        """Добавляет объект запроса в контекст сериализатора."""
-        context = super().get_serializer_context()
-        context.update({"request": self.request})
-        return context
-
     def _toggle_relation(self, model, recipe_id, user, request):
         """Добавляет или удаляет рецепт в связанной модели."""
         recipe = get_object_or_404(Recipe, pk=recipe_id)
@@ -225,25 +214,27 @@ class RecipeViewSet(viewsets.ModelViewSet):
         """Добавляет или удаляет рецепт из списка покупок."""
         return self._toggle_relation(ShoppingCart, pk, request.user, request)
 
-    def _generate_shopping_cart_text(self, user):
+    def _generate_shopping_cart_text(
+        self, user, recipes, ingredients, template="shopping_cart_list.txt"
+    ):
         """Генерирует текстовый список покупок для пользователя."""
-        recipes = Recipe.objects.filter(shopping_carts__user=user)
-
-        ingredients = (
-            RecipeIngredient.objects.filter(recipe__in=recipes)
-            .values("ingredient__name", "ingredient__measurement_unit")
-            .annotate(total_amount=Sum("amount"))
-            .order_by("ingredient__name")
-        )
-
-        return render_to_string(
-            "shopping_cart_list.txt",
+        test = render_to_string(
+            template,
             {
                 "user": user,
                 "date": now().date(),
                 "ingredients": ingredients,
                 "recipes": recipes,
             },
+        )
+        buffer = BytesIO()
+        buffer.write(test.encode("utf-8"))
+        buffer.seek(0)
+        return FileResponse(
+            buffer,
+            as_attachment=True,
+            filename=f"shopping_cart_list_{now().date()}.txt",
+            content_type="text/plain",
         )
 
     @action(
@@ -254,17 +245,16 @@ class RecipeViewSet(viewsets.ModelViewSet):
     )
     def download_shopping_cart(self, request):
         """Отдаёт список покупок через FileResponse."""
-        text = self._generate_shopping_cart_text(request.user)
+        recipes = Recipe.objects.filter(shopping_carts__user=request.user)
 
-        buffer = BytesIO()
-        buffer.write(text.encode("utf-8"))
-        buffer.seek(0)
-
-        return FileResponse(
-            buffer,
-            as_attachment=True,
-            filename="shopping_cart_list.txt",
-            content_type="text/plain",
+        ingredients = (
+            RecipeIngredient.objects.filter(recipe__in=recipes)
+            .values("ingredient__name", "ingredient__measurement_unit")
+            .annotate(total_amount=Sum("amount"))
+            .order_by("ingredient__name")
+        )
+        return self._generate_shopping_cart_text(
+            request.user, recipes, ingredients, "shopping_cart_list.txt"
         )
 
     @action(
