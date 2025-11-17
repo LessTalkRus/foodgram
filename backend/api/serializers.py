@@ -121,11 +121,9 @@ class RecipeReadSerializer(serializers.ModelSerializer):
             return False
         return getattr(recipe, manager_name).filter(user=user).exists()
 
-
     def get_is_favorited(self, recipe):
         """Возвращает True, если текущий пользователь добавил рецепт в избранное."""
         return self.__is_in(recipe, "favorites")
-
 
     def get_is_in_shopping_cart(self, recipe):
         """Возвращает True, если текущий пользователь добавил рецепт в список покупок."""
@@ -151,6 +149,7 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
             "text",
             "cooking_time",
         )
+
     def validate_image(self, value):
         """Валидация наличия изображения."""
         if not value:

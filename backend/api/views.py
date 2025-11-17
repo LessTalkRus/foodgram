@@ -105,10 +105,11 @@ class UserViewSet(DjoserUserViewSet):
         user = request.user
 
         if request.method == "DELETE":
-            follow = Follow.objects.filter(user=user, following=author)
-            if not follow.exists():
+            deleted, _ = Follow.objects.filter(
+                user=user, following=author
+            ).delete()
+            if not deleted:
                 raise ValidationError("Вы не подписаны на этого пользователя.")
-            follow.delete()
             return Response(status=status.HTTP_204_NO_CONTENT)
 
         if user == author:
