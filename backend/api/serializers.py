@@ -84,7 +84,7 @@ class RecipeReadSerializer(serializers.ModelSerializer):
     ingredients = RecipeIngredientReadSerializer(
         source="recipeingredients", many=True, read_only=True
     )
-    image = serializers.SerializerMethodField()
+    image = Base64ImageField(required=False, allow_null=True)
     is_favorited = serializers.SerializerMethodField()
     is_in_shopping_cart = serializers.SerializerMethodField()
 
@@ -102,11 +102,6 @@ class RecipeReadSerializer(serializers.ModelSerializer):
             "is_favorited",
             "is_in_shopping_cart",
         )
-
-    def get_image(self, obj):
-        """Возвращает абсолютный URL изображения рецепта."""
-        request = self.context.get("request")
-        return request.build_absolute_uri(obj.image.url)
 
     def __is_in(self, recipe, manager_name):
         """
@@ -144,7 +139,7 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
     tags = serializers.PrimaryKeyRelatedField(
         queryset=Tag.objects.all(), many=True
     )
-    image = Base64ImageField(required=False, allow_null=True)
+    image = Base64ImageField(required=True, allow_null=True)
 
     class Meta:
         model = Recipe
@@ -156,16 +151,20 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
             "text",
             "cooking_time",
         )
+    def validate_image(self, value):
+        """Валидация наличия изображения."""
+        if not value:
+            raise serializers.ValidationError("Картинка - обязательное поле!")
+        return value
 
     def validate(self, data):
         """
         Комплексная валидация рецепта:
-        - проверка обязательных полей (ingredients, tags, image);
+        - проверка обязательных полей (ingredients, tags);
         - проверка на дубликаты ингредиентов;
         - проверка на дубликаты тегов.
         """
-        # Проверка обязательных полей (POST)
-        for field in ("ingredients", "tags", "image"):
+        for field in ("ingredients", "tags"):
             if not data.get(field):
                 raise serializers.ValidationError(
                     {field: "Это поле обязательно."}
@@ -173,15 +172,11 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
 
         ingredients = data.get("ingredients", [])
         tags = data.get("tags", [])
-
-        # Проверка дубликатов ингредиентов
         ingredient_ids = [item["ingredient"].id for item in ingredients]
         if len(ingredient_ids) != len(set(ingredient_ids)):
             raise serializers.ValidationError(
                 {"ingredients": "Список ингредиентов содержит дубликаты."}
             )
-
-        # Проверка дубликатов тегов
         if len(tags) != len(set(tags)):
             raise serializers.ValidationError(
                 {"tags": "Список тегов содержит дубликаты."}
@@ -240,14 +235,7 @@ class UserFollowSerializer(BaseUserSerializer):
     )
 
     class Meta(BaseUserSerializer.Meta):
-        fields = (
-            "id",
-            "email",
-            "username",
-            "first_name",
-            "last_name",
-            "avatar",
-            "is_subscribed",
+        fields = BaseUserSerializer.Meta.fields + (
             "recipes",
             "recipes_count",
         )
