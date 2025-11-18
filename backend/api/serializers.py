@@ -114,7 +114,8 @@ class RecipeReadSerializer(serializers.ModelSerializer):
                 (например, "favorites" или "shopping_carts").
 
         Возвращает:
-            bool: True, если пользователь аутентифицирован и рецепт есть в указанной связи.
+            bool: True, если пользователь аутентифицирован
+            и рецепт есть в указанной связи.
         """
         user = self.context["request"].user
         if not user.is_authenticated:
@@ -122,11 +123,11 @@ class RecipeReadSerializer(serializers.ModelSerializer):
         return getattr(recipe, manager_name).filter(user=user).exists()
 
     def get_is_favorited(self, recipe):
-        """Возвращает True, если текущий пользователь добавил рецепт в избранное."""
+        """Возвращает True, если рецепт в избранном."""
         return self.__is_in(recipe, "favorites")
 
     def get_is_in_shopping_cart(self, recipe):
-        """Возвращает True, если текущий пользователь добавил рецепт в список покупок."""
+        """Возвращает True, если рецепт в списке покупок."""
         return self.__is_in(recipe, "shopping_carts")
 
 
